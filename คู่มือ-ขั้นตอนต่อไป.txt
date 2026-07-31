@@ -1,0 +1,338 @@
+=====================================================================
+  คู่มือตั้งค่าระบบ Palliative Care — ฉบับสมบูรณ์ ทีละคลิก
+=====================================================================
+
+สิ่งที่ต้องมีก่อนเริ่ม:
+  ✅ คอมพิวเตอร์ที่เปิดเครื่องอยู่
+  ✅ Browser Chrome (หรือ Edge)
+  ✅ บัญชี Google (Gmail) — ใช้อันไหนก็ได้
+  ✅ Node.js ติดตั้งแล้ว (มีอยู่แล้วที่เครื่องนี้)
+  ✅ VS Code เปิดโปรเจค palliative-care-app อยู่
+
+=====================================================================
+PART 1: เตรียมเครื่อง — Login clasp (ทำครั้งเดียวตลอดชีพ)
+=====================================================================
+
+1. กดปุ่ม Windows บนคีย์บอร์ด (หรือกด Win+R)
+2. พิมพ์ cmd → กด Enter
+3. หน้าต่างสีดำจะเปิดขึ้นมา
+4. พิมพ์คำสั่งนี้ลงไป แล้วกด Enter:
+
+    clasp login
+
+5. หน้าต่างเบราว์เซอร์จะเด้งขึ้นมา
+6. มันจะถามว่า "Choose an account" → คลิกเลือก Gmail ของคุณ
+7. หน้าถัดไปจะขึ้นว่า "Google hasn't verified this app"
+   → คลิก "Advanced" (ด้านล่างซ้าย)
+   → คลิก "Go to Google Apps Script API (unsafe)"
+8. หน้าถัดไปจะถามสิทธิ์ → คลิก "Allow"
+9. หน้าจอจะขึ้นว่า "Successfully logged in" หรือ "Authorization successful"
+10. ปิดเบราว์เซอร์ → กลับมาที่หน้าต่าง Terminal สีดำ
+11. Terminal จะขึ้นว่า "Authorization successful" หรือ "Logged in as ..."
+12. ✅ เสร็จ PART 1 — เปิด Terminal ค้างไว้
+
+=====================================================================
+PART 2: สร้าง Google Sheet ใหม่
+=====================================================================
+
+2.1 เปิดเบราว์เซอร์ Chrome
+2.2 พิมพ์ที่ address bar:  sheets.google.com  → กด Enter
+2.3 หน้าที่เปิดขึ้นมา คือ Google Sheets
+2.4 ตรงมุมซ้ายบน จะมีปุ่ม + สีเขียวๆ (Blank) → คลิก
+2.5 จะเปิด sheet เปล่าขึ้นมา
+2.6 ด้านบนซ้าย มีคำว่า "Untitled spreadsheet" → ดับเบิลคลิก
+2.7 พิมพ์ชื่อใหม่:  palliative_care_db
+2.8 กด Enter
+2.9 ✅ เสร็จ PART 2 — ได้ Google Sheet ชื่อ palliative_care_db
+
+=====================================================================
+PART 3: เปิด Apps Script Editor
+=====================================================================
+
+3.1 ใน Google Sheet ที่เปิดอยู่ (palliative_care_db)
+3.2 ดูที่เมนูด้านบน (File, Edit, View, Insert, Format...)
+3.3 หาคำว่า "Extensions" (หรือ "ส่วนขยาย") → คลิก
+3.4 ใน dropdown ที่โผล่มา → คลิก "Apps Script"
+3.5 หน้าต่างใหม่จะเปิดขึ้นมา (แยกจาก Google Sheet)
+3.6 หน้าต่างนี้คือ Apps Script Editor
+3.7 ด้านบนซ้ายจะมีคำว่า "Untitled project" → ไม่ต้องสนใจตอนนี้
+3.8 ✅ เสร็จ PART 3 — Apps Script Editor เปิดอยู่
+
+=====================================================================
+PART 4: Copy Script ID
+=====================================================================
+
+4.1 ใน Apps Script Editor
+4.2 ดูที่แถบด้านซ้าย — จะมีปุ่มรูปเฟือง ⚙️ (Project Settings)
+4.3 คลิก ⚙️
+4.4 จะมีช่องทำเครื่องหมาย: "Show "appsscript.json" manifest file..."
+4.5 คลิก ✔️ ติ๊กถูก
+4.6 หน้าจะ refresh
+4.7 ดูตรงกลางหน้า — หัวข้อ "IDs"
+4.8 จะเห็น "Script ID" — เป็นตัวอักษรยาวๆ เช่น:
+    AKfycbwxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4.9 ใช้เมาส์ลากคลุม Script ID ทั้งหมด → Ctrl+C (Copy)
+4.10 ✅ เสร็จ PART 4 — มี Script ID ใน clipboard
+
+=====================================================================
+PART 5: ตั้งค่า Script ID ใน VS Code
+=====================================================================
+
+5.1 เปิด VS Code (น่าจะเปิดอยู่แล้ว)
+5.2 ด้านซ้าย VS Code → หาไฟล์ apps-script → .clasp.json
+5.3 คลิกเปิดไฟล์ .clasp.json
+5.4 เนื้อหาข้างในจะเป็นแบบนี้:
+
+    {"scriptId":"YOUR_SCRIPT_ID_HERE","rootDir":"."}
+
+5.5 ลบ YOUR_SCRIPT_ID_HERE
+5.6 วาง Script ID ที่ copy มา (Ctrl+V)
+5.7 หน้าตาเป็นแบบนี้:
+
+    {"scriptId":"AKfycbwxxxxxxxxxxxxxxxxxxxxxxxx","rootDir":"."}
+
+5.8 Ctrl+S เซฟ
+5.9 ✅ เสร็จ PART 5
+
+=====================================================================
+PART 6: Push โค้ดขึ้น Apps Script
+=====================================================================
+
+6.1 กลับไปที่ Terminal (หน้าต่างสีดำ) ที่เปิดค้างไว้ตั้งแต่ PART 1
+6.2 พิมพ์คำสั่งนี้ แล้วกด Enter:
+
+    cd C:\Users\mark4\VS Code\palliative-care-app\apps-script
+
+6.3 จากนั้นพิมพ์:
+
+    
+
+6.4 รอ 2-3 วินาที → Terminal จะขึ้นว่า:
+
+    └─ Code.gs
+    └─ Form.html
+    └─ appsscript.json
+    Pushed 3 files.
+
+6.5 กลับไปที่ Apps Script Editor ในเบราว์เซอร์
+6.6 ด้านซ้าย — จะเห็นไฟล์ Code.gs และ Form.html ปรากฏขึ้นมา
+6.7 ✅ เสร็จ PART 6 — โค้ดอัพโหลดแล้ว
+
+=====================================================================
+PART 7: สร้างตารางข้อมูล (Run setupSheets)
+=====================================================================
+
+7.1 ใน Apps Script Editor
+7.2 ด้านบนจะมี dropdown สีเทา (ปกติจะแสดงคำว่า "doGet")
+7.3 คลิก dropdown นั้น → เลือก "setupSheets"
+7.4 กดปุ่ม ▶ Run (สีแดง อยู่ข้าง dropdown)
+7.5 หน้าต่าง "Authorization required" จะเด้งขึ้นมา
+7.6 คลิก "Review permissions"
+7.7 เลือกบัญชี Gmail ของคุณ
+7.8 หน้าถัดไปจะขึ้นว่า "Google hasn't verified this app"
+   → คลิก "Advanced" (ด้านล่างซ้าย)
+   → คลิก "Go to ESAS-Form (unsafe)"
+7.9 หน้าถัดไป → คลิก "Allow"
+7.10 รอ 3-5 วินาที → จะมีกล่องข้อความขึ้นว่า
+     "✅ ตั้งค่า Sheets เรียบร้อย! พร้อมใช้งาน"
+7.11 คลิก OK
+7.12 กลับไปที่แท็บ Google Sheet (palliative_care_db)
+      → ด้านล่างจะมีแท็บใหม่ 4 อัน:
+        users | patients | assessments | event_logs
+7.13 เปิดแท็บ patients → จะมีข้อมูลตัวอย่าง 2 คน:
+      - 123456 | คุณยายสมศรี รักดี | CA Lung ระยะ 4
+      - 998877 | คุณลุงบุญมี ศรีสุข | CHF
+7.14 ✅ เสร็จ PART 7
+
+=====================================================================
+PART 8: Deploy เป็น Web App
+=====================================================================
+
+8.1 ใน Apps Script Editor
+8.2 มุมขวาบน → กดปุ่ม "Deploy" สีฟ้า
+8.3 เลือก "New deployment"
+8.4 คลิกไอคอน ⚙️ (Select type)
+8.5 เลือก "Web app"
+8.6 กรอกข้อมูล:
+    - Description: ESAS v1 (พิมพ์อะไรก็ได้)
+    - Execute as: Me (your-email@gmail.com)
+    - Who has access: Anyone
+8.7 กด "Deploy"
+8.8 จะมีหน้าต่าง Authorize access เด้งขึ้นมา → กด "Authorize access"
+8.9 เลือกบัญชี → กด Allow
+8.10 ❗ หน้าต่างจะแสดง URL
+
+     https://script.google.com/macros/s/AKfycbxxxxxx/exec
+
+8.11 คลิก "Copy" หรือใช้เมาส์ลากคลุม → Ctrl+C
+8.12 ❗ เก็บ URL นี้ไว้ดีๆ!!
+8.13 กด "Done"
+8.14 ✅ เสร็จ PART 8 — ได้ URL Web App แล้ว
+
+=====================================================================
+PART 9: ทดสอบฟอร์มในมือถือ
+=====================================================================
+
+9.1 เปิด LINE บนมือถือ (หรือ LINE บนคอม)
+9.2 ส่ง URL ที่ copy มาให้ตัวเอง → เติม ?token=sample_token_abc123 ต่อท้าย
+
+    เช่น: https://script.google.com/macros/s/AKfy.../exec?token=sample_token_abc123
+
+9.3 เปิดลิงก์นั้นในมือถือ
+9.4 ต้องเห็นหน้า Welcome สีขาว
+    - มีข้อความ "ยินดีต้อนรับสู่ระบบทำแบบประเมินอาการ"
+    - มีปุ่มสีฟ้า "เริ่มทำแบบประเมิน"
+9.5 กดเริ่ม → จะมี 9 ข้อ เลือกคะแนน 0-10
+    - มีปุ่มตัวเลข 0 ถึง 10
+    - มีอีโมจิยาย 😊😐😟 เปลี่ยนตามคะแนน
+9.6 เลื่อนจนครบ 9 ข้อ → หน้าสุดท้ายมีช่องให้พิมพ์ข้อความเพิ่มเติม
+9.7 กด "ส่งแบบประเมิน"
+9.8 ต้องขึ้น ✅ "ส่งแบบประเมินเรียบร้อย"
+9.9 กลับไปดู Google Sheet → แท็บ assessments → มีข้อมูลใหม่เพิ่มมา
+9.10 ✅ เสร็จ PART 9 — ฟอร์มใช้ได้จริง
+
+=====================================================================
+PART 10: ตั้งค่า config.js และรันหน้าจัดการ
+=====================================================================
+
+10.1 ใน VS Code → เปิดไฟล์ frontend\src\config.js
+10.2 หาบรรทัดที่ 13:
+
+     export const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+
+10.3 เปลี่ยน YOUR_SCRIPT_ID เป็น URL จริงที่ copy มาจาก PART 8
+
+     export const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxxxxx/exec';
+
+10.4 Ctrl+S เซฟ
+
+10.5 เปิด Terminal ใหม่ (Win+R → cmd → Enter)
+
+10.6 พิมพ์:
+
+     cd C:\Users\mark4\VS Code\palliative-care-app\frontend
+
+10.7 พิมพ์:
+
+     npm install
+
+     (รอติดตั้ง package, ทำครั้งแรกครั้งเดียว)
+
+10.8 พิมพ์:
+
+     npm run dev
+
+10.9 จะขึ้นข้อความประมาณ:
+
+     VITE v5.4.21  ready in xxx ms
+     ➜  Local:   http://localhost:5173/
+     ➜  Network: http://192.168.x.x:5173/
+
+10.10 เปิดเบราว์เซอร์ Chrome
+10.11 พิมพ์ URL:  http://localhost:5173/login
+10.12 จะเห็นหน้า Login สีขาว-ฟ้า
+10.13 กรอก:
+      - ชื่อผู้ใช้งาน: admin
+      - รหัสผ่าน: admin123
+10.14 กด "เข้าสู่ระบบ"
+10.15 ต้องเห็นหน้า Dashboard
+      - มีการ์ด 3 ใบ: ผู้ป่วย Active, รอส่งลิงก์, แจ้งเตือนวิกฤต
+      - มีตารางรายชื่อคนไข้ 2 คน (สมศรี, บุญมี)
+10.16 กดปุ่ม "📋 Copy ลิงก์" ของคนไข้สมศรี
+10.17 ลิงก์ที่ copy ต้องเป็น Apps Script URL เช่น:
+      https://script.google.com/macros/s/AKfy.../exec?token=sample_token_abc123
+10.18 ✅ เสร็จ PART 10 — ระบบทำงานสมบูรณ์ทั้งหน้าจัดการและฟอร์ม
+
+=====================================================================
+PART 11: วิธีใช้งานประจำวัน
+=====================================================================
+
+📋 การเพิ่มคนไข้ใหม่:
+    → เปิด http://localhost:5173/registry
+    → กด "ลงทะเบียนผู้ป่วยใหม่" → กรอกข้อมูล → บันทึก
+    → หรือเพิ่มใน Google Sheets แท็บ patients โดยตรง
+
+📤 การส่งลิงก์ให้ญาติ:
+    → Dashboard → กด "📋 Copy ลิงก์" ของคนไข้
+    → ไปที่ LINE → กด "💬 เปิดแชท LINE"
+    → วางลิงก์ (Ctrl+V) → ส่ง
+
+📊 การดูผล:
+    → Dashboard เห็นคะแนนล่าสุดของแต่ละคน
+    → กด "ดู Timeline" → เห็นกราฟและประวัติการประเมิน
+    → หรือเปิด Google Sheets → แท็บ assessments
+
+=====================================================================
+PART 12: วิธีแก้ไขโค้ด (สำหรับนักพัฒนา)
+=====================================================================
+
+🔧 แก้ไขฟอร์ม ESAS:
+    1. ใน VS Code → เปิด apps-script\Form.html
+    2. แก้ไขตามต้องการ → Ctrl+S เซฟ
+    3. Terminal:
+
+       cd C:\Users\mark4\VS Code\palliative-care-app\apps-script
+       clasp push
+
+    4. Apps Script Editor → Deploy → New deployment → Web app → Deploy
+    5. Copy URL ใหม่ → อัพเดทใน config.js (ถ้า URL เปลี่ยน)
+
+🔧 แก้ไข Backend API:
+    1. ใน VS Code → เปิด apps-script\Code.gs
+    2. แก้ไข → เซฟ
+    3. Terminal: clasp push
+    4. Apps Script → Deploy ใหม่
+
+🔧 แก้ไขหน้าจัดการ (Dashboard, ลงทะเบียน, Timeline):
+    1. ใน VS Code → เปิด frontend\src\pages\*.jsx
+    2. แก้ไข → Ctrl+S เซฟ
+    3. เบราว์เซอร์ที่เปิด localhost:5173 จะรีเฟรชอัตโนมัติ
+    4. เห็นผลทันที ไม่ต้อง build ไม่ต้อง deploy
+
+=====================================================================
+PART 13: FAQ (คำถามที่พบบ่อย)
+=====================================================================
+
+Q: URL Apps Script เปลี่ยนทุกครั้งที่แก้ไขไหม?
+A: ถ้า clasp deploy แบบ new deployment → URL ใหม่
+   แต่ถ้า Deploy ผ่าน Apps Script Editor → เลือก "Manage deployments"
+   → Edit → Version: New → Deploy → URL เดิม!
+
+Q: ต้องเปิด Terminal ค้างไว้ตลอดไหม?
+A: Terminal ที่รัน npm run dev ต้องเปิดค้างไว้
+   Terminal clasp push ใช้เฉพาะตอนอัพเดท Apps Script
+
+Q: ข้อมูลหายไหม?
+A: ไม่หาย — ข้อมูลทั้งหมดอยู่ใน Google Sheets
+   มี Auto-save + Version history
+
+Q: อยากให้เพื่อนร่วมงานใช้ด้วย?
+A: ส่ง URL Apps Script + token ให้ → เปิดฟอร์มในมือถือได้เลย
+   หรือแชร์ Google Sheet ให้ → ดูข้อมูลได้
+
+Q: ถ้าอยากใช้ระบบโดยไม่เปิด Terminal?
+A: Deploy Netlify (PART 14 — ทำทีหลัง)
+   แล้วเปิดเว็บจาก URL Netlify ได้เลย ไม่ต้องเปิด Terminal
+
+⚡ ขั้นตอนโดยย่อ — กรณีปิดคอม แล้ววันถัดไปมาเปิดใหม่
+
+สิ่งที่เปลี่ยนไปหลังปิดคอม:
+  ❌ Terminal ที่รัน npm run dev — ปิดไปแล้ว (ต้องเปิดใหม่)
+  ❌ localhost:5173 — เข้าไม่ได้ (ต้องรันใหม่)
+  ✅ Google Sheet + Apps Script — ยังอยู่ (อยู่ใน Cloud ไม่หาย)
+  ✅ ข้อมูลทุกอย่าง — ยังอยู่ (Google Sheets auto-save)
+  ✅ ไฟล์โค้ดใน VS Code — ยังอยู่ (แก้ไว้ครบ)
+
+สิ่งที่ต้องทำ:
+
+1. เปิด Terminal (Win+R → cmd → Enter)
+2. cd C:\Users\mark4\VS Code\palliative-care-app\frontend
+3. npm run dev
+4. เปิด Chrome → http://localhost:5173/login
+5. Login: admin / admin123
+6. ✅ ใช้ต่อได้เลย
+
+* Apps Script ไม่ต้องเปิดใหม่ — มันทำงานบน Google Cloud ตลอดเวลา
+* ถ้าจะแก้ Apps Script → clasp push (ไม่ต้อง login ใหม่ clasp จำไว้แล้ว)
+
+=====================================================================
