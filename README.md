@@ -227,7 +227,7 @@ Default accounts (ใน Google Sheets):
 
 - **Frontend (Production):** https://palliative-care-app.netlify.app
 - **Frontend (Dev):** http://localhost:5173
-- **Backend API:** https://script.google.com/macros/s/AKfycbxHJUmh_et7Ap948HYfuJsMUdThQfCk98cVna9dEk_1dDSCY86J8y3w51gETzyb06hGMA/exec
+- **Backend API:** https://script.google.com/macros/s/AKfycbwAmryrKeQmMIVUbhw1TmQvBkYURYtGLFb4s5cmw4OQ7BPYwD2daOcCYgvHdS0IZyoOUA/exec
 - **Apps Script Editor:** https://script.google.com/home/projects/16WNlCuqdyIjkouWegOHdvamX5ODsWYSjIPTGBUMayq4rgZUGyjItyNB8
 
 ## 🛠️ Tech Stack

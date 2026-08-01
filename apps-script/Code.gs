@@ -207,6 +207,10 @@ function getPatients() {
     const patient = {};
     headers.forEach((h, idx) => { patient[h] = row[idx] || ''; });
     
+    // HN/id ต้องเป็น string เสมอ (sheet อาจเก็บเป็น number)
+    patient.HN = String(row[0]);
+    patient.id = String(row[0]);
+    
     // Get latest assessment
     patient.latestAssessment = getLatestAssessment(patient.HN);
     patients.push(patient);
@@ -227,7 +231,7 @@ function createPatient(body, user) {
   
   // Check duplicate
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === id) {
+    if (sameId(data[i][0], id)) {
       return jsonResponse({ error: 'Patient with this HN already exists' }, 400);
     }
   }
@@ -272,7 +276,7 @@ function updatePatient(body, user) {
   const headers = data[0];
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === id) {
+    if (sameId(data[i][0], id)) {
       if (status) {
         const statusCol = headers.indexOf('status');
         if (statusCol >= 0) sheet.getRange(i + 1, statusCol + 1).setValue(status);
@@ -291,14 +295,14 @@ function deletePatient(patientId, user) {
   const data = sheet.getDataRange().getValues();
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === patientId) {
+    if (sameId(data[i][0], patientId)) {
       sheet.deleteRow(i + 1);
       
       // Also delete assessments
       const assessSheet = getSheet(SHEET_ASSESSMENTS);
       const aData = assessSheet.getDataRange().getValues();
       for (let j = aData.length - 1; j >= 1; j--) {
-        if (aData[j][1] === patientId) assessSheet.deleteRow(j + 1);
+        if (sameId(aData[j][1], patientId)) assessSheet.deleteRow(j + 1);
       }
       
       return jsonResponse({ message: 'Patient deleted' });
@@ -318,7 +322,7 @@ function generateToken(patientId, status, user) {
   const statusCol = headers.indexOf('status');
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === patientId) {
+    if (sameId(data[i][0], patientId)) {
       if (!data[i][tokenCol]) {
         const newToken = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
         sheet.getRange(i + 1, tokenCol + 1).setValue(newToken);
@@ -330,6 +334,8 @@ function generateToken(patientId, status, user) {
       
       const patient = {};
       headers.forEach((h, idx) => { patient[h] = data[i][idx] || ''; });
+      patient.HN = String(data[i][0]);
+      patient.id = String(data[i][0]);
       return jsonResponse(patient);
     }
   }
@@ -346,10 +352,11 @@ function verifyTokenAPI(token) {
   const tokenCol = headers.indexOf('token');
   const nameCol = headers.indexOf('name');
   const hnCol = headers.indexOf('HN');
+  const diseaseCol = headers.indexOf('disease');
   
   for (let i = 1; i < data.length; i++) {
     if (data[i][tokenCol] === token) {
-      return jsonResponse({ name: data[i][nameCol], disease: data[i][3], HN: data[i][hnCol] });
+      return jsonResponse({ name: data[i][nameCol], disease: diseaseCol >= 0 ? data[i][diseaseCol] : '', HN: String(data[i][hnCol]) });
     }
   }
   
@@ -459,7 +466,7 @@ function getAssessments(patientId, user) {
   const results = [];
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][1] === patientId) {
+    if (sameId(data[i][1], patientId)) {
       const ass = {};
       headers.forEach((h, idx) => { ass[h] = data[i][idx] || ''; });
       
@@ -493,7 +500,7 @@ function getLatestAssessment(patientHN) {
   let latestDate = '';
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][1] === patientHN && data[i][2] >= latestDate) {
+    if (sameId(data[i][1], patientHN) && data[i][2] >= latestDate) {
       latestDate = data[i][2];
       latest = {};
       headers.forEach((h, idx) => { latest[h] = data[i][idx] || ''; });
@@ -525,7 +532,7 @@ function getEventLogs(patientId, user) {
   const results = [];
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][1] === patientId) {
+    if (sameId(data[i][1], patientId)) {
       const log = {};
       headers.forEach((h, idx) => { log[h] = data[i][idx] || ''; });
       results.push(log);
@@ -643,6 +650,14 @@ function getTtsBase64(text) {
 }
 
 // ==================== HELPERS ====================
+
+/**
+ * เปรียบเทียบ HN/patientId แบบ lenient
+ * Google Sheets อาจเก็บ HN เป็น number (123456) แต่ query/body จาก frontend เป็น string ("123456")
+ */
+function sameId(a, b) {
+  return String(a) === String(b);
+}
 
 function getSheet(name) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();

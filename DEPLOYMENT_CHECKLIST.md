@@ -27,7 +27,7 @@
    - คลิก **Edit** (ไอคอนดินสอ)
    - เปลี่ยน **Who has access** → **Anyone**
    - คลิก **Deploy**
-6. ✅ URL ควรเป็น: `https://script.google.com/macros/s/AKfycbxHJUmh_et7Ap948HYfuJsMUdThQfCk98cVna9dEk_1dDSCY86J8y3w51gETzyb06hGMA/exec`
+6. ✅ URL ควรเป็น: `https://script.google.com/macros/s/AKfycbwAmryrKeQmMIVUbhw1TmQvBkYURYtGLFb4s5cmw4OQ7BPYwD2daOcCYgvHdS0IZyoOUA/exec`
 
 ---
 
@@ -38,7 +38,7 @@
 
 ```bash
 # Test 1: ทดสอบ Login API
-curl -X POST "https://script.google.com/macros/s/AKfycbxHJUmh_et7Ap948HYfuJsMUdThQfCk98cVna9dEk_1dDSCY86J8y3w51gETzyb06hGMA/exec?path=login" ^
+curl -X POST "https://script.google.com/macros/s/AKfycbwAmryrKeQmMIVUbhw1TmQvBkYURYtGLFb4s5cmw4OQ7BPYwD2daOcCYgvHdS0IZyoOUA/exec?path=login" ^
   -H "Content-Type: application/json" ^
   -d "{\"username\":\"admin\",\"password\":\"admin123\"}"
 ```
