@@ -16,9 +16,9 @@ function getToken() { return localStorage.getItem('token') || ''; }
 function normalizePath(path, params = {}) {
   const p = params || {};
 
-  if (path === '/api/auth/login') return { route: 'login' };
-  if (path === '/api/auth/me') return { route: 'me' };
-  if (path === '/api/patients') return { route: 'patients' };
+  if (path === '/api/auth/login') return { route: 'login', params: { ...p } };
+  if (path === '/api/auth/me') return { route: 'me', params: { ...p } };
+  if (path === '/api/patients') return { route: 'patients', params: { ...p } };
 
   // /api/assessments/:id
   let m = path.match(/^\/api\/assessments\/(.+)$/);

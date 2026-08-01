@@ -34,7 +34,7 @@ export default function Login({ onLoginSuccess }) {
             <button type="submit" disabled={loading} className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-md shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center justify-center">{loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</button>
           </form>
         </div>
-        <div className="bg-slate-50 border-t border-slate-100 p-5 text-center text-xs text-slate-400">รพ.พล Palliative Care System v1.0.0</div>
+        <div className="bg-slate-50 border-t border-slate-100 p-5 text-center text-xs text-slate-400">รพ.พล Palliative Care System (v1.0.0)</div>
       </div>
     </div>
   );
