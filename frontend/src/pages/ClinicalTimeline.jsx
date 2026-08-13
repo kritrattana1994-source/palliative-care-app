@@ -576,6 +576,22 @@ export default function ClinicalTimeline({ token }) {
                           <strong className="text-amber-800">💬 บันทึกเพิ่มเติมจากผู้ป่วย/ญาติ:</strong> {ass.notes}
                         </div>
                       )}
+
+                      {ass.selfCareGuides && Object.keys(ass.selfCareGuides).length > 0 && (
+                        <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-xs text-slate-700 leading-relaxed font-semibold">
+                          <strong className="text-emerald-800 flex items-center gap-1.5 mb-1.5">
+                            <HeartPulse className="w-4 h-4" /> แนวทางการดูแลตนเองที่ให้ผู้ป่วย:
+                          </strong>
+                          <ul className="space-y-1 pl-1">
+                            {Object.entries(ass.selfCareGuides).map(([k, guide]) => (
+                               <li key={k} className="flex gap-1.5">
+                                 <span className="text-emerald-500">•</span>
+                                 <span><strong>{symptomsList.find(s => s.key === k)?.label.split(' ')[0]}:</strong> {guide}</span>
+                               </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

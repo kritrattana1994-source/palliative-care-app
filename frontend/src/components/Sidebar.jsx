@@ -67,6 +67,10 @@ export default function Sidebar({ user, onLogout }) {
               <UserCog className="w-5 h-5 shrink-0" />
               <span>จัดการเจ้าหน้าที่</span>
             </NavLink>
+            <NavLink to="/assessment-config" className={navLinkClass}>
+              <ClipboardList className="w-5 h-5 shrink-0" />
+              <span>จัดการข้อความประเมิน</span>
+            </NavLink>
           </>
         )}
       </nav>

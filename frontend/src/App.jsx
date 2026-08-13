@@ -7,6 +7,7 @@ import PatientRegistry from './pages/PatientRegistry';
 import ClinicalTimeline from './pages/ClinicalTimeline';
 import ESASForm from './pages/ESASForm';
 import StaffManagement from './pages/StaffManagement';
+import AssessmentConfig from './pages/AssessmentConfig';
 import { auth, onAuthStateChanged, signOut, db, doc, getDoc } from './services/firebase';
 
 export default function App() {
@@ -59,7 +60,7 @@ export default function App() {
       <Routes>
         <Route path="/assess/:token" element={<ESASForm />} />
         <Route path="/login" element={token ? <Navigate to="/dashboard" replace /> : <Login onLoginSuccess={handleLoginSuccess} />} />
-        <Route path="/*" element={token ? (<div className="flex h-screen overflow-hidden"><Sidebar user={user} onLogout={handleLogout} /><Routes><Route path="/dashboard" element={<Dashboard token={token} />} /><Route path="/registry" element={<PatientRegistry token={token} />} /><Route path="/timeline/:id" element={<ClinicalTimeline token={token} />} /><Route path="/staff" element={<StaffManagement token={token} user={user} />} /><Route path="*" element={<Navigate to="/dashboard" replace />} /></Routes></div>) : <Navigate to="/login" replace />} />
+        <Route path="/*" element={token ? (<div className="flex h-screen overflow-hidden"><Sidebar user={user} onLogout={handleLogout} /><Routes><Route path="/dashboard" element={<Dashboard token={token} />} /><Route path="/registry" element={<PatientRegistry token={token} />} /><Route path="/timeline/:id" element={<ClinicalTimeline token={token} />} /><Route path="/staff" element={<StaffManagement token={token} user={user} />} /><Route path="/assessment-config" element={<AssessmentConfig token={token} user={user} />} /><Route path="*" element={<Navigate to="/dashboard" replace />} /></Routes></div>) : <Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

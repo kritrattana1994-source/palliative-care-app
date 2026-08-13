@@ -3,10 +3,11 @@ import { useParams } from 'react-router-dom';
 import { 
   Activity, AlertCircle, CheckCircle, ChevronRight, ChevronLeft, 
   Volume2, VolumeX, Play, Heart, Thermometer, Gauge, Scale, 
-  Clock, ShieldAlert, Sparkles, Send, Check, HeartPulse, User, PlusCircle, CheckSquare, Square
+  Clock, ShieldAlert, Sparkles, Send, Check, HeartPulse, User, PlusCircle, CheckSquare, Square, Download
 } from 'lucide-react';
 import { apiPublicGet, apiPublicPost, getTtsUrl } from '../config';
-import { db, collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } from '../services/firebase';
+import { db, collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, getDoc } from '../services/firebase';
+import html2canvas from 'html2canvas';
 
 const THAI_NUMBER_WORDS = [
   'ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 
@@ -21,6 +22,7 @@ export default function ESASForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [started, setStarted] = useState(false);
+  const [assessmentConfig, setAssessmentConfig] = useState(null);
   
   // Step: 0 to 8 = ESAS symptoms (9 items)
   // Step: 9 = Vital Signs & Other Symptoms
@@ -72,6 +74,9 @@ export default function ESASForm() {
       desc: '0 = ไม่ปวดเลย, 10 = ปวดรุนแรงที่สุดเท่าที่จะเป็นไปได้', 
       voiceLabel: 'ข้อที่หนึ่ง อาการปวด ศูนย์คือไม่มีอาการปวดเลย สิบคือปวดรุนแรงที่สุดเท่าที่จะเป็นไปได้ค่ะ',
       speechMap: (score, numWord) => {
+        if (assessmentConfig && assessmentConfig['pain'] && assessmentConfig['pain'][score]) {
+           return assessmentConfig['pain'][score].speechMessage;
+        }
         if (score === 0) return 'อาการปวด ศูนย์คะแนน ไม่มีอาการปวดเลย สบายดีเป็นปกติค่ะ';
         if (score <= 3) return `อาการปวด เลือกระดับ ${numWord} คะแนน ปวดเล็กน้อย ยังทนไหวค่ะ`;
         if (score <= 6) return `อาการปวด เลือกระดับ ${numWord} คะแนน ปวดปานกลาง เริ่มรบกวนการใช้ชีวิตค่ะ`;
@@ -86,6 +91,9 @@ export default function ESASForm() {
       desc: '0 = หายใจสะดวกดี, 10 = หายใจลำบาก เหนื่อยหอบรุนแรงที่สุด', 
       voiceLabel: 'ข้อที่สอง อาการหายใจเหนื่อยหอบ ศูนย์คือหายใจสะดวกดีปกติ สิบคือหายใจลำบากและเหนื่อยหอบรุนแรงที่สุดค่ะ',
       speechMap: (score, numWord) => {
+        if (assessmentConfig && assessmentConfig['shortnessOfBreath'] && assessmentConfig['shortnessOfBreath'][score]) {
+           return assessmentConfig['shortnessOfBreath'][score].speechMessage;
+        }
         if (score === 0) return 'หายใจเหนื่อยหอบ ศูนย์คะแนน หายใจสะดวกดีเป็นปกติค่ะ';
         if (score <= 3) return `หายใจเหนื่อยหอบ เลือกระดับ ${numWord} คะแนน เหนื่อยเล็กน้อยเวลาออกแรงค่ะ`;
         if (score <= 6) return `หายใจเหนื่อยหอบ เลือกระดับ ${numWord} คะแนน เหนื่อยปานกลาง เริ่มรู้สึกอึดอัดค่ะ`;
@@ -100,6 +108,9 @@ export default function ESASForm() {
       desc: '0 = กระฉับกระเฉงดี, 10 = อ่อนเพลียรุนแรงจนขยับตัวไม่ไหว', 
       voiceLabel: 'ข้อที่สาม ความเหนื่อยล้าหรืออ่อนเพลีย ศูนย์คือกระฉับกระเฉงดี สิบคืออ่อนเพลียรุนแรงจนขยับตัวไม่ไหวค่ะ',
       speechMap: (score, numWord) => {
+        if (assessmentConfig && assessmentConfig['tiredness'] && assessmentConfig['tiredness'][score]) {
+           return assessmentConfig['tiredness'][score].speechMessage;
+        }
         if (score === 0) return 'ความเหนื่อยล้าหรืออ่อนเพลีย ศูนย์คะแนน กระฉับกระเฉงดีเป็นปกติค่ะ';
         if (score <= 3) return `ความเหนื่อยล้า เลือกระดับ ${numWord} คะแนน อ่อนเพลียเล็กน้อย พักแล้วดีขึ้นค่ะ`;
         if (score <= 6) return `ความเหนื่อยล้า เลือกระดับ ${numWord} คะแนน อ่อนเพลียปานกลาง ทำกิจวัตรได้ช้าลงค่ะ`;
@@ -114,6 +125,9 @@ export default function ESASForm() {
       desc: '0 = ตื่นตัวดี, 10 = ง่วงซึมตลอดเวลา ปลุกตื่นยาก', 
       voiceLabel: 'ข้อที่สี่ ความง่วงซึม ศูนย์คือตื่นตัวดีปกติ สิบคือง่วงซึมตลอดเวลาปลุกตื่นยากค่ะ',
       speechMap: (score, numWord) => {
+        if (assessmentConfig && assessmentConfig['drowsiness'] && assessmentConfig['drowsiness'][score]) {
+           return assessmentConfig['drowsiness'][score].speechMessage;
+        }
         if (score === 0) return 'ความง่วงซึม ศูนย์คะแนน ตื่นตัวสดชื่นดีค่ะ';
         if (score <= 3) return `ความง่วงซึม เลือกระดับ ${numWord} คะแนน ง่วงเล็กน้อยในระหว่างวันค่ะ`;
         if (score <= 6) return `ความง่วงซึม เลือกระดับ ${numWord} คะแนน ง่วงปานกลาง เผลอหลับบ่อยค่ะ`;
@@ -128,6 +142,9 @@ export default function ESASForm() {
       desc: '0 = ไม่รู้สึกคลื่นไส้เลย, 10 = คลื่นไส้และอาเจียนรุนแรงตลอด', 
       voiceLabel: 'ข้อที่ห้า อาการคลื่นไส้ ศูนย์คือไม่รู้สึกคลื่นไส้เลย สิบคือคลื่นไส้และอาเจียนรุนแรงตลอดเวลาค่ะ',
       speechMap: (score, numWord) => {
+        if (assessmentConfig && assessmentConfig['nausea'] && assessmentConfig['nausea'][score]) {
+           return assessmentConfig['nausea'][score].speechMessage;
+        }
         if (score === 0) return 'อาการคลื่นไส้ ศูนย์คะแนน ไม่รู้สึกคลื่นไส้เลย สบายดีค่ะ';
         if (score <= 3) return `อาการคลื่นไส้ เลือกระดับ ${numWord} คะแนน คลื่นไส้เล็กน้อย ไม่อาเจียนค่ะ`;
         if (score <= 6) return `อาการคลื่นไส้ เลือกระดับ ${numWord} คะแนน คลื่นไส้ปานกลาง รู้สึกพะอืดพะอมค่ะ`;
@@ -142,6 +159,9 @@ export default function ESASForm() {
       desc: '0 = ทานได้ปกติ, 10 = เบื่ออาหารอย่างรุนแรง ทานไม่ได้เลย', 
       voiceLabel: 'ข้อที่หก ความอยากอาหาร ศูนย์คืออยากอาหารปกติรับประทานได้ดี สิบคือเบื่ออาหารอย่างรุนแรงและรับประทานไม่ได้เลยค่ะ',
       speechMap: (score, numWord) => {
+        if (assessmentConfig && assessmentConfig['appetite'] && assessmentConfig['appetite'][score]) {
+           return assessmentConfig['appetite'][score].speechMessage;
+        }
         if (score === 0) return 'ความอยากอาหาร ศูนย์คะแนน รับประทานอาหารได้ปกติ เอร็ดอร่อยดีค่ะ';
         if (score <= 3) return `ความอยากอาหาร เลือกระดับ ${numWord} คะแนน เบื่ออาหารเล็กน้อย ยังทานได้พอสมควรค่ะ`;
         if (score <= 6) return `ความอยากอาหาร เลือกระดับ ${numWord} คะแนน เบื่ออาหารปานกลาง ทานได้ลดลงครึ่งหนึ่งค่ะ`;
@@ -156,6 +176,9 @@ export default function ESASForm() {
       desc: '0 = อารมณ์ดี มีกำลังใจ, 10 = ซึมเศร้า ท้อแท้หดหู่รุนแรงที่สุด', 
       voiceLabel: 'ข้อที่เจ็ด ความรู้สึกซึมเศร้า ศูนย์คืออารมณ์ดีปกติมีกำลังใจดี สิบคือซึมเศร้าหรือท้อแท้หดหู่รุนแรงที่สุดค่ะ',
       speechMap: (score, numWord) => {
+        if (assessmentConfig && assessmentConfig['depression'] && assessmentConfig['depression'][score]) {
+           return assessmentConfig['depression'][score].speechMessage;
+        }
         if (score === 0) return 'ความรู้สึกซึมเศร้า ศูนย์คะแนน อารมณ์ดี มีกำลังใจแจ่มใสค่ะ';
         if (score <= 3) return `ความรู้สึกซึมเศร้า เลือกระดับ ${numWord} คะแนน ซึมเศร้าหรือเหงาเล็กน้อยค่ะ`;
         if (score <= 6) return `ความรู้สึกซึมเศร้า เลือกระดับ ${numWord} คะแนน รู้สึกหดหู่ท้อแท้ปานกลางค่ะ`;
@@ -170,6 +193,9 @@ export default function ESASForm() {
       desc: '0 = สงบ ปลอดภัยดี, 10 = วิตกกังวล กลัว กระสับกระส่ายรุนแรง', 
       voiceLabel: 'ข้อที่แปด ความวิตกกังวล ศูนย์คือรู้สึกสงบปลอดภัยดีปกติ สิบคือกังวลกลัวกระสับกระส่ายรุนแรงที่สุดค่ะ',
       speechMap: (score, numWord) => {
+        if (assessmentConfig && assessmentConfig['anxiety'] && assessmentConfig['anxiety'][score]) {
+           return assessmentConfig['anxiety'][score].speechMessage;
+        }
         if (score === 0) return 'ความวิตกกังวล ศูนย์คะแนน รู้สึกสงบ ปลอดภัย สบายใจดีค่ะ';
         if (score <= 3) return `ความวิตกกังวล เลือกระดับ ${numWord} คะแนน กังวลเล็กน้อย ยังควบคุมได้ค่ะ`;
         if (score <= 6) return `ความวิตกกังวล เลือกระดับ ${numWord} คะแนน กังวลปานกลาง รู้สึกกระวนกระวายค่ะ`;
@@ -184,6 +210,9 @@ export default function ESASForm() {
       desc: '0 = สบายตัวสบายใจดีมาก, 10 = รู้สึกไม่สบายตัวแย่ที่สุด', 
       voiceLabel: 'ข้อที่เก้า ความรู้สึกสบายหรือสุขภาวะโดยรวม ศูนย์คือรู้สึกสบายตัวสบายใจดีมาก สิบคือไม่สบายตัวอย่างรุนแรงที่สุดค่ะ',
       speechMap: (score, numWord) => {
+        if (assessmentConfig && assessmentConfig['wellbeing'] && assessmentConfig['wellbeing'][score]) {
+           return assessmentConfig['wellbeing'][score].speechMessage;
+        }
         if (score === 0) return 'สุขภาวะโดยรวม ศูนย์คะแนน สบายตัว สบายใจดีมากค่ะ';
         if (score <= 3) return `สุขภาวะโดยรวม เลือกระดับ ${numWord} คะแนน รู้สึกสบายดี มีอาการรบกวนเพียงเล็กน้อยค่ะ`;
         if (score <= 6) return `สุขภาวะโดยรวม เลือกระดับ ${numWord} คะแนน ไม่ค่อยสบายตัว ปานกลางค่ะ`;
@@ -201,7 +230,7 @@ export default function ESASForm() {
   ];
 
   useEffect(() => {
-    const verifyToken = async () => {
+    const verifyTokenAndLoadConfig = async () => {
       try {
         const q = query(collection(db, 'patients'), where('token', '==', token));
         const snapshot = await getDocs(q);
@@ -211,17 +240,25 @@ export default function ESASForm() {
         const patientData = snapshot.docs[0].data();
         patientData.id = snapshot.docs[0].id;
         setPatient(patientData);
+
+        // Fetch config
+        const docRef = doc(db, 'systemSettings', 'assessmentConfig');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setAssessmentConfig(docSnap.data());
+        }
       } catch (err) {
         setError(err.message || 'ลิงก์ทำแบบประเมินไม่ถูกต้องหรือหมดอายุ');
       } finally {
         setLoading(false);
       }
     };
-    if (token) verifyToken();
+    if (token) verifyTokenAndLoadConfig();
   }, [token]);
 
   const audioRef = useRef(null);
   const thaiVoiceRef = useRef(null);
+  const summaryRef = useRef(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [ttsEngine, setTtsEngine] = useState('native');
 
@@ -364,6 +401,13 @@ export default function ESASForm() {
     setSubmitting(true);
     setError('');
     try {
+      const selfCareGuides = {};
+      Object.entries(scores).forEach(([key, score]) => {
+          if (assessmentConfig && assessmentConfig[key] && assessmentConfig[key][score] && assessmentConfig[key][score].selfCareGuide) {
+              selfCareGuides[key] = assessmentConfig[key][score].selfCareGuide;
+          }
+      });
+
       const assessmentData = {
         patientId: patient.id,
         scores,
@@ -371,6 +415,7 @@ export default function ESASForm() {
         notes,
         vitalSigns,
         otherSymptoms: otherSymptoms.join(', '),
+        selfCareGuides,
         createdAt: serverTimestamp(),
         date: new Date().toLocaleDateString('th-TH')
       };
@@ -382,7 +427,7 @@ export default function ESASForm() {
           latestAssessment: assessmentData
       });
 
-      if (autoPlayVoice) speakText('ส่งแบบประเมินเรียบร้อย ขอบคุณค่ะ เจ้าหน้าที่จะคอยติดตามอาการของคนไข้อย่างใกล้ชิดค่ะ');
+      if (autoPlayVoice) speakText('ส่งแบบประเมินเรียบร้อย ขอบคุณค่ะ แคปเจอร์หน้าจอนี้เก็บไว้เพื่อดูคำแนะนำการดูแลตนเองนะคะ');
       setSubmitted(true);
     } catch (err) {
       setError(err.message || 'เกิดข้อผิดพลาดในการส่งแบบประเมิน กรุณาลองใหม่อีกครั้ง');
@@ -398,6 +443,10 @@ export default function ESASForm() {
   };
 
   const getScoreDescription = (score) => {
+    const symId = activeSymptom?.key;
+    if (symId && assessmentConfig && assessmentConfig[symId] && assessmentConfig[symId][score] && assessmentConfig[symId][score].displayMessage) {
+        return assessmentConfig[symId][score].displayMessage;
+    }
     if (score === 0) return 'ไม่มีอาการเลย สบายดีเป็นปกติ 😊';
     if (score <= 3) return 'อาการระดับน้อย สบายดีอยู่ ยังทนไหว 👍';
     if (score <= 6) return 'อาการระดับปานกลาง เริ่มรู้สึกอึดอัดรบกวน 😐';
@@ -450,39 +499,104 @@ export default function ESASForm() {
     );
   }
 
+  const handleDownloadImage = async () => {
+    if (!summaryRef.current) return;
+    try {
+      const canvas = await html2canvas(summaryRef.current, {
+        scale: 2,
+        backgroundColor: '#f8fafc',
+      });
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `esas-summary-${patient?.name || 'patient'}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Error generating image', err);
+    }
+  };
+
   if (submitted) {
     return (
       <div className="min-h-screen bg-emerald-50/60 py-8 px-4 flex items-center justify-center">
-        <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl border border-emerald-100 text-center space-y-6 animate-fadeIn">
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 border-4 border-emerald-50 shadow-inner">
-            <CheckCircle className="w-10 h-10" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-2xl font-black text-slate-800">ส่งแบบประเมินเรียบร้อย</h3>
-            <p className="text-sm text-slate-600 font-medium leading-relaxed">
-              ระบบได้บันทึกข้อมูลอาการของ <br/>
-              <span className="text-emerald-700 text-lg font-black">"{patient?.name}"</span> เรียบร้อยแล้ว
-            </p>
-          </div>
-
-          {isAnyCritical ? (
-            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 text-xs text-red-700 text-left space-y-1.5 shadow-sm">
-              <div className="flex items-center gap-1.5 font-black text-red-800 text-sm">
-                <ShieldAlert className="w-4 h-4" /> ตรวจพบคะแนนอาการระดับวิกฤต (≥ 7)
-              </div>
-              <p className="leading-relaxed font-medium">
-                ระบบได้ส่งการแจ้งเตือนด่วนไปยังพยาบาลและทีมแพทย์แล้ว หากคนไข้มีอาการเหนื่อยหอบมากหรือไม่รู้สึกตัว กรุณาโทรติดต่อ รพ.พล ทันที
+        <div className="w-full max-w-md space-y-4">
+          
+          <div ref={summaryRef} className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-emerald-100 text-center space-y-6 animate-fadeIn">
+            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 border-4 border-emerald-50 shadow-inner">
+              <CheckCircle className="w-10 h-10" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-xl sm:text-2xl font-black text-slate-800">ส่งแบบประเมินเรียบร้อย</h3>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+                ระบบได้บันทึกข้อมูลอาการของ <br/>
+                <span className="text-emerald-700 text-base sm:text-lg font-black">"{patient?.name}"</span> เรียบร้อยแล้ว
               </p>
             </div>
-          ) : (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-800 text-left shadow-sm">
-              💚 <strong>คำแนะนำ:</strong> ให้คนไข้พักผ่อนและรับประทานยาตามที่แพทย์สั่งอย่างสม่ำเสมอ พยาบาลจะคอยติดตามผลจากหน้า Dashboard ค่ะ
-            </div>
-          )}
 
-          <div className="pt-2 text-xs text-slate-400 font-bold">
-            โรงพยาบาลพล • ศูนย์การดูแลแบบประคับประคอง (Home Ward)
+            {/* Score Summary Grid */}
+            <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 sm:p-4 rounded-2xl border border-slate-200">
+              {symptomsMeta.map(s => {
+                const val = scores[s.key];
+                let badge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                if (val >= 7) badge = 'bg-red-100 text-red-800 border-red-300 font-black';
+                else if (val >= 4) badge = 'bg-amber-100 text-amber-800 border-amber-300 font-black';
+                return (
+                  <div key={s.key} className="bg-white p-2 rounded-xl border border-slate-200 text-center shadow-xs">
+                    <div className="text-[10px] sm:text-[11px] font-bold text-slate-600 truncate">{s.title}</div>
+                    <div className={`text-sm sm:text-base font-black px-2 py-0.5 rounded-lg border mt-1 inline-block ${badge}`}>
+                      {val}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Self-Care Guidelines */}
+            <div className="text-left space-y-2">
+              <h4 className="text-sm font-black text-slate-800 flex items-center gap-1.5 border-b pb-1">
+                <HeartPulse className="w-4 h-4 text-emerald-500" />
+                แนวทางการดูแลตนเอง
+              </h4>
+              <ul className="space-y-1.5">
+                {Object.entries(scores)
+                  .filter(([key, score]) => assessmentConfig && assessmentConfig[key] && assessmentConfig[key][score] && assessmentConfig[key][score].selfCareGuide)
+                  .map(([key, score]) => (
+                    <li key={key} className="text-xs sm:text-sm text-slate-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-100">
+                      <strong>{symptomsMeta.find(s => s.key === key)?.title}:</strong> {assessmentConfig[key][score].selfCareGuide}
+                    </li>
+                  ))}
+                  {Object.entries(scores).filter(([key, score]) => assessmentConfig && assessmentConfig[key] && assessmentConfig[key][score] && assessmentConfig[key][score].selfCareGuide).length === 0 && (
+                    <li className="text-xs sm:text-sm text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                      พักผ่อนให้เพียงพอและทำจิตใจให้สบาย
+                    </li>
+                  )}
+              </ul>
+            </div>
+
+            {isAnyCritical && (
+              <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 text-xs text-red-700 text-left space-y-1.5 shadow-sm">
+                <div className="flex items-center gap-1.5 font-black text-red-800 text-sm">
+                  <ShieldAlert className="w-4 h-4" /> ตรวจพบคะแนนอาการระดับวิกฤต (≥ 7)
+                </div>
+                <p className="leading-relaxed font-medium">
+                  ระบบได้ส่งการแจ้งเตือนด่วนไปยังพยาบาลและทีมแพทย์แล้ว หากคนไข้มีอาการเหนื่อยหอบมากหรือไม่รู้สึกตัว กรุณาโทรติดต่อ รพ.พล ทันที
+                </p>
+              </div>
+            )}
+
+            <div className="pt-2 text-[10px] sm:text-xs text-slate-400 font-bold border-t border-slate-100 mt-4">
+              โรงพยาบาลพล • ศูนย์การดูแลแบบประคับประคอง
+            </div>
           </div>
+
+          <button 
+            onClick={handleDownloadImage}
+            className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 hover:bg-slate-900 active:bg-slate-950 text-white border-2 border-slate-700 rounded-2xl font-black text-base shadow-lg transition-all cursor-pointer"
+          >
+            <Download className="w-5 h-5" />
+            <span>บันทึกรูปภาพคำแนะนำ</span>
+          </button>
         </div>
       </div>
     );
