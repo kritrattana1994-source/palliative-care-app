@@ -1,78 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Search, CheckCircle, Package } from 'lucide-react';
-import { db, collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, where } from '../services/firebase';
+import { Search, Save, Package, ArrowLeft, CheckCircle } from 'lucide-react';
+import { db, collection, getDocs, setDoc, updateDoc, doc, serverTimestamp, query, where, orderBy, onSnapshot } from '../services/firebase';
 
 export default function EquipmentReturn({ token }) {
     const navigate = useNavigate();
     const [borrowedEquipments, setBorrowedEquipments] = useState([]);
+    const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [search, setSearch] = useState('');
 
-    // Return Form State
-    const [selectedEquipment, setSelectedEquipment] = useState(null);
+    const [selectedItem, setSelectedItem] = useState(null);
     const [returnCondition, setReturnCondition] = useState('ปกติ');
     const [returnNote, setReturnNote] = useState('');
-    const [staffName, setStaffName] = useState('เจ้าหน้าที่ (แอดมิน)'); // Mock
 
     useEffect(() => {
-        fetchBorrowed();
-    }, []);
-
-    const fetchBorrowed = async () => {
         setLoading(true);
-        try {
-            const q = query(collection(db, 'equipments'), where('status', '==', 'ยืม'));
-            const snap = await getDocs(q);
+        // Find equipments that are currently borrowed
+        const unsub = onSnapshot(query(collection(db, 'equipments'), where('status', '==', 'ยืม')), async (snap) => {
             const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            
-            // To get patient name, we need to join manually or just show patientId
-            // For simplicity, we just use the currentPatientId. 
-            // In a real scenario we'd fetch patient names too.
             setBorrowedEquipments(data);
             setLoading(false);
-        } catch (err) {
-            console.error(err);
-            alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-            setLoading(false);
-        }
-    };
+        });
+        return () => unsub();
+    }, []);
 
     const handleSelect = (eq) => {
-        setSelectedEquipment(eq);
+        setSelectedItem(eq);
         setReturnCondition('ปกติ');
         setReturnNote('');
     };
 
     const handleSave = async () => {
-        if (!selectedEquipment) return;
+        if (!selectedItem) return;
         setSubmitting(true);
         try {
             const refId = 'REF-' + Date.now().toString().slice(-6);
 
-            // 1. Create Return Record
-            await addDoc(collection(db, 'borrow_records'), {
+            // Create Return Record
+            await setDoc(doc(db, 'borrow_records', `${refId}_${selectedItem.id}`), {
                 refId: refId,
                 type: 'คืน',
-                patientId: selectedEquipment.currentPatientId || 'Unknown',
-                equipmentId: selectedEquipment.id,
-                equipmentName: selectedEquipment.name,
-                staff: staffName,
+                patientId: selectedItem.currentPatientId || 'Unknown',
+                patientName: selectedItem.currentPatientId || 'Unknown',
+                equipmentId: selectedItem.id,
+                equipmentName: selectedItem.name,
+                staff: 'เจ้าหน้าที่ (แอดมิน)',
+                ward: '-',
                 timestamp: serverTimestamp(),
                 condition: returnCondition,
-                note: returnNote
+                note: returnNote,
+                deposit: 0,
+                photoUrl: ''
             });
 
-            // 2. Update Equipment Status
-            await updateDoc(doc(db, 'equipments', selectedEquipment.id), {
+            // Update Equipment
+            await updateDoc(doc(db, 'equipments', selectedItem.id), {
                 status: 'ว่าง',
                 currentPatientId: null
             });
 
-            alert('บันทึกการคืนสำเร็จ!');
-            setSelectedEquipment(null);
-            fetchBorrowed(); // Refresh list
+            alert('บันทึกรับคืนอุปกรณ์สำเร็จ!');
+            setSelectedItem(null);
         } catch (err) {
             console.error(err);
             alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
@@ -82,60 +71,53 @@ export default function EquipmentReturn({ token }) {
 
     const filtered = borrowedEquipments.filter(e => {
         const q = search.toLowerCase();
-        return e.name.toLowerCase().includes(q) || (e.currentPatientId && e.currentPatientId.toLowerCase().includes(q));
+        return e.name.toLowerCase().includes(q) || (e.currentPatientId && e.currentPatientId.toLowerCase().includes(q)) || e.id.toLowerCase().includes(q);
     });
 
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-50">
-            <header className="bg-white border-b border-slate-200 px-8 py-5 sticky top-0 z-10 flex flex-wrap justify-between items-center gap-4 shadow-sm">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => navigate('/equipments')} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-slate-500" />
-                    </button>
-                    <div>
-                        <h2 className="text-2xl font-black text-slate-800">ทำรายการคืนเครื่องมือแพทย์</h2>
-                    </div>
-                </div>
-            </header>
+        <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-[#f0f7ff] font-['Sarabun'] relative">
+            
+            <div className="max-w-5xl mx-auto w-full mt-6 mb-4 px-4 flex flex-wrap justify-center gap-3">
+                <button onClick={() => navigate('/equipments/borrow')} className="bg-white text-blue-600 border border-blue-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-blue-50 transition-all">หน้ายืมเครื่อง</button>
+                <button className="bg-red-600 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm">หน้าคืน/แก้ไข</button>
+                <button onClick={() => navigate('/patients')} className="bg-white text-purple-600 border border-purple-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-purple-50 transition-all">จัดการคนไข้</button>
+                <button onClick={() => navigate('/equipments')} className="bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-slate-50 transition-all">แดชบอร์ด</button>
+            </div>
 
-            <div className="p-6 md:p-8 max-w-5xl mx-auto w-full space-y-6 flex flex-col lg:flex-row gap-6">
+            <div className="max-w-5xl mx-auto w-full flex flex-col lg:flex-row gap-6 px-4 pb-12">
                 
-                {/* Left Panel: List of Borrowed items */}
-                <div className="w-full lg:w-1/2 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[600px]">
-                    <div className="p-4 border-b border-slate-200 bg-slate-50/60">
+                {/* Left Panel */}
+                <div className="w-full lg:w-1/2 bg-white rounded-3xl shadow-xl overflow-hidden border-t-8 border-red-600 flex flex-col h-[70vh]">
+                    <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                        <h2 className="text-xl font-bold text-red-700 uppercase tracking-tighter mb-4">🔴 รายการเครื่องมือที่ค้างยืม</h2>
                         <div className="relative">
-                            <span className="absolute left-3.5 top-2.5 text-slate-400"><Search className="w-4 h-4" /></span>
-                            <input
-                                type="text"
-                                placeholder="ค้นหาชื่ออุปกรณ์, HN..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-9 pr-4 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 w-full outline-none"
-                            />
+                            <span className="absolute left-3.5 top-3.5 text-slate-400"><Search className="w-5 h-5" /></span>
+                            <input type="text" placeholder="ค้นหาชื่ออุปกรณ์, รหัส, HN..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl font-bold text-slate-700 focus:border-red-400 w-full outline-none shadow-sm" />
                         </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
                         {loading ? (
-                            <div className="text-center p-8 text-slate-400">กำลังโหลด...</div>
+                            <div className="text-center p-8 text-slate-400 font-bold">กำลังโหลดข้อมูล...</div>
                         ) : filtered.length === 0 ? (
-                            <div className="text-center p-8 text-slate-400">ไม่มีรายการค้างคืน</div>
+                            <div className="text-center p-8 text-slate-400 font-bold">ไม่มีรายการค้างคืนที่ตรงกับการค้นหา</div>
                         ) : (
                             filtered.map(eq => (
                                 <div 
                                     key={eq.id} 
                                     onClick={() => handleSelect(eq)}
-                                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                                        selectedEquipment?.id === eq.id 
-                                        ? 'border-amber-500 bg-amber-50 shadow-sm ring-2 ring-amber-500/20' 
-                                        : 'border-slate-200 hover:border-amber-300 hover:bg-slate-50'
+                                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                                        selectedItem?.id === eq.id 
+                                        ? 'border-red-400 bg-red-50 shadow-md transform scale-[1.02]' 
+                                        : 'border-slate-200 hover:border-red-200 bg-white hover:bg-red-50/30 shadow-sm'
                                     }`}
                                 >
-                                    <div className="flex justify-between items-start">
+                                    <div className="flex justify-between items-center">
                                         <div>
-                                            <h4 className="font-bold text-slate-800">{eq.name}</h4>
-                                            <p className="text-xs text-slate-500 mt-1">ผู้ยืม (HN): <span className="font-bold text-slate-700">{eq.currentPatientId || 'ไม่ระบุ'}</span></p>
+                                            <h4 className="font-black text-slate-800">{eq.name}</h4>
+                                            <p className="text-xs text-slate-500 mt-1 font-bold">รหัสเครื่อง: <span className="text-blue-600">{eq.id}</span></p>
+                                            <p className="text-xs text-slate-500 font-bold">ผู้ยืม (HN): <span className="text-orange-600">{eq.currentPatientId || 'ไม่ระบุ'}</span></p>
                                         </div>
-                                        <Package className={`w-5 h-5 ${selectedEquipment?.id === eq.id ? 'text-amber-600' : 'text-slate-400'}`} />
+                                        <Package className={`w-8 h-8 ${selectedItem?.id === eq.id ? 'text-red-500' : 'text-slate-300'}`} />
                                     </div>
                                 </div>
                             ))
@@ -143,52 +125,45 @@ export default function EquipmentReturn({ token }) {
                     </div>
                 </div>
 
-                {/* Right Panel: Return Form */}
+                {/* Right Panel */}
                 <div className="w-full lg:w-1/2">
-                    {selectedEquipment ? (
-                        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-200 bg-amber-50/50 font-black text-amber-800 flex items-center gap-2">
-                                <CheckCircle className="w-5 h-5 text-amber-600" />
-                                บันทึกการคืน: {selectedEquipment.name}
+                    {selectedItem ? (
+                        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border-t-8 border-slate-800 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <div className="px-6 py-5 border-b border-slate-100 bg-slate-800 text-white font-black flex items-center gap-2 text-lg">
+                                <CheckCircle className="w-6 h-6 text-green-400" />
+                                บันทึกรับคืนเครื่องมือ
                             </div>
-                            <div className="p-6 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">สภาพเครื่องมือตอนคืน</label>
-                                    <input
-                                        type="text"
-                                        value={returnCondition}
-                                        onChange={(e) => setReturnCondition(e.target.value)}
-                                        className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">หมายเหตุเพิ่มเติม</label>
-                                    <textarea
-                                        value={returnNote}
-                                        onChange={(e) => setReturnNote(e.target.value)}
-                                        rows="3"
-                                        className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-amber-500 outline-none"
-                                        placeholder="เช่น มีรอยขีดข่วน, อุปกรณ์ครบ..."
-                                    ></textarea>
+                            <div className="p-6">
+                                <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                                    <h3 className="font-black text-blue-700 text-lg mb-1">{selectedItem.name}</h3>
+                                    <p className="text-sm font-bold text-slate-500 mb-1">รหัสเครื่อง: {selectedItem.id}</p>
+                                    <p className="text-sm font-bold text-slate-500">HN ผู้ยืม: <span className="text-orange-600">{selectedItem.currentPatientId}</span></p>
                                 </div>
 
-                                <div className="pt-4 border-t border-slate-100 flex justify-end">
-                                    <button
-                                        onClick={handleSave}
-                                        disabled={submitting}
-                                        className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md w-full justify-center"
-                                    >
-                                        <Save className="w-5 h-5" />
-                                        {submitting ? 'กำลังบันทึก...' : 'ยืนยันรับคืนเข้าคลัง'}
-                                    </button>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">สภาพเครื่องมือตอนคืน *</label>
+                                        <input type="text" value={returnCondition} onChange={(e) => setReturnCondition(e.target.value)} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 focus:border-slate-800 outline-none shadow-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">หมายเหตุเพิ่มเติม (ถ้ามี)</label>
+                                        <textarea value={returnNote} onChange={(e) => setReturnNote(e.target.value)} rows="3" className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:border-slate-800 outline-none shadow-sm" placeholder="เช่น อุปกรณ์ครบ, มีรอยขีดข่วน..."></textarea>
+                                    </div>
+
+                                    <div className="pt-6 mt-2">
+                                        <button onClick={handleSave} disabled={submitting} className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 text-white px-6 py-4 rounded-2xl font-black text-lg transition-all shadow-xl active:scale-95">
+                                            <Save className="w-6 h-6" />
+                                            {submitting ? 'กำลังบันทึก...' : 'ยืนยันรับคืนเข้าคลัง'}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     ) : (
-                        <div className="h-full flex items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
-                            <div className="text-center text-slate-400 font-bold">
-                                👈 กรุณาเลือกรายการเครื่องมือที่ต้องการคืนจากรายการด้านซ้าย
-                            </div>
+                        <div className="h-full min-h-[400px] flex flex-col items-center justify-center border-4 border-dashed border-slate-200 rounded-3xl bg-white/50 p-8 text-center">
+                            <Package className="w-16 h-16 text-slate-300 mb-4" />
+                            <h3 className="text-xl font-black text-slate-400 mb-2">ยังไม่ได้เลือกรายการ</h3>
+                            <p className="text-slate-400 font-medium">กรุณาคลิกเลือกเครื่องมือที่ต้องการทำเรื่องคืน<br/>จากรายการทางด้านซ้ายมือ 👈</p>
                         </div>
                     )}
                 </div>
