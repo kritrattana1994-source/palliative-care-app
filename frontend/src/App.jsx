@@ -6,27 +6,51 @@ import Dashboard from './pages/Dashboard';
 import PatientRegistry from './pages/PatientRegistry';
 import ClinicalTimeline from './pages/ClinicalTimeline';
 import ESASForm from './pages/ESASForm';
-import { apiGet } from './config';
+import StaffManagement from './pages/StaffManagement';
+import { auth, onAuthStateChanged, signOut, db, doc, getDoc } from './services/firebase';
 
 export default function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || null);
+  const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      if (!token) { setLoading(false); return; }
-      try {
-        const data = await apiGet('/api/auth/me');
-        setUser(data.user);
-      } catch (err) { handleLogout(); } finally { setLoading(false); }
-    })();
-  }, [token]);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setToken(currentUser.accessToken);
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          let userData = { uid: currentUser.uid, email: currentUser.email };
+          if (userDoc.exists()) {
+              userData = { ...userData, ...userDoc.data() };
+          }
+          setUser(userData);
+        } catch (e) {
+          console.error("Error fetching user data", e);
+        }
+      } else {
+        setToken(null);
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleLoginSuccess = (newToken, loggedInUser) => {
-    localStorage.setItem('token', newToken); setToken(newToken); setUser(loggedInUser);
+    // onAuthStateChanged handles the state, but we can set it here for immediate UI update
+    setToken(newToken);
+    setUser(loggedInUser);
   };
-  const handleLogout = () => { localStorage.removeItem('token'); setToken(null); setUser(null); };
+  
+  const handleLogout = async () => { 
+      try {
+          await signOut(auth);
+      } catch (e) {
+          console.error("Error signing out", e);
+      }
+  };
 
   if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center"><div className="text-slate-400 font-bold">กำลังตรวจสอบเซสชันผู้ใช้...</div></div>;
 
@@ -35,7 +59,7 @@ export default function App() {
       <Routes>
         <Route path="/assess/:token" element={<ESASForm />} />
         <Route path="/login" element={token ? <Navigate to="/dashboard" replace /> : <Login onLoginSuccess={handleLoginSuccess} />} />
-        <Route path="/*" element={token ? (<div className="flex h-screen overflow-hidden"><Sidebar user={user} onLogout={handleLogout} /><Routes><Route path="/dashboard" element={<Dashboard token={token} />} /><Route path="/registry" element={<PatientRegistry token={token} />} /><Route path="/timeline/:id" element={<ClinicalTimeline token={token} />} /><Route path="*" element={<Navigate to="/dashboard" replace />} /></Routes></div>) : <Navigate to="/login" replace />} />
+        <Route path="/*" element={token ? (<div className="flex h-screen overflow-hidden"><Sidebar user={user} onLogout={handleLogout} /><Routes><Route path="/dashboard" element={<Dashboard token={token} />} /><Route path="/registry" element={<PatientRegistry token={token} />} /><Route path="/timeline/:id" element={<ClinicalTimeline token={token} />} /><Route path="/staff" element={<StaffManagement token={token} user={user} />} /><Route path="*" element={<Navigate to="/dashboard" replace />} /></Routes></div>) : <Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

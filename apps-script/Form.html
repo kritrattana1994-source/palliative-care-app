@@ -1,270 +1,596 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html lang="th">
 <head>
-  <base target="_top"><meta charset="UTF-8">
+  <base target="_top">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>แบบประเมินอาการ ESAS</title>
+  <title>แบบประเมินอาการ ESAS - รพ.พล</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Sarabun','Noto Sans Thai',sans-serif;background:#f8fafc;min-height:100vh;display:flex;justify-content:center;align-items:center;padding:16px}
-    .container{width:100%;max-width:480px;display:flex;flex-direction:column;gap:16px}
-    .header-bar{background:white;border-radius:16px;padding:16px 20px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 2px rgba(0,0,0,0.04)}
-    .header-bar .title{font-weight:800;font-size:14px;color:#334155;display:flex;align-items:center;gap:6px}
-    .card{background:white;border-radius:24px;padding:28px 24px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px}
-    .grandma-avatar{width:80px;height:80px;border-radius:9999px;background:#eff6ff;border:1px solid #dbeafe;display:flex;align-items:center;justify-content:center;font-size:48px;overflow:hidden}
-    .patient-name{font-size:14px;color:#2563eb;font-weight:700}
-    .card-title{font-weight:800;font-size:20px;color:#1e293b;line-height:1.4}
-    .card-desc{font-size:12px;color:#64748b;font-weight:500;line-height:1.6}
-    .warning-box{background:#fffbeb;border:1px solid #fde68a;border-radius:16px;padding:12px 14px;font-size:10px;color:#92400e;text-align:left;display:flex;gap:8px;line-height:1.6}
-    .voice-test-box{background:#f0f9ff;border:1px solid #bae6fd;border-radius:16px;padding:14px;font-size:11px;text-align:center}
-    .voice-test-box .status{font-weight:800;margin-bottom:8px}
-    .voice-test-box .status.ok{color:#047857}
-    .voice-test-box .status.warn{color:#b45309}
-    .btn{width:100%;padding:16px;border-radius:24px;font-weight:700;font-size:15px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
-    .btn-primary{background:#2563eb;color:white;box-shadow:0 4px 12px rgba(37,99,235,0.25)}
-    .btn-primary:active{background:#1d4ed8}
-    .btn-secondary{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
-    .btn-outline{background:white;color:#2563eb;border:2px solid #2563eb}
-    .btn-sm{padding:10px 20px;font-size:13px;width:auto}
-    .btn:disabled{opacity:0.5;cursor:not-allowed}
-    .progress-row{width:100%;display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#94a3b8;border-bottom:1px solid #f1f5f9;padding-bottom:12px}
-    .progress-row .step-num{color:#2563eb}
-    .grandma-large{width:160px;height:160px;border-radius:9999px;background:#f8fafc;border:1px solid #f1f5f9;display:flex;align-items:center;justify-content:center;font-size:80px;overflow:hidden;box-shadow:inset 0 2px 4px rgba(0,0,0,0.04)}
-    .symptom-label{font-weight:800;font-size:17px;color:#1e293b;line-height:1.3}
-    .symptom-desc{font-size:12px;color:#64748b;font-weight:500}
-    .speak-btn{display:inline-flex;padding:6px;border-radius:9999px;background:transparent;border:none;cursor:pointer;color:#2563eb;font-size:18px}
-    .score-labels{width:100%;display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#94a3b8}
-    .score-big{font-size:28px;padding:6px 24px;border-radius:9999px;font-weight:800}
-    .score-big.green{background:#d1fae5;color:#047857}.score-big.yellow{background:#fef3c7;color:#b45309}.score-big.red{background:#fee2e2;color:#b91c1c;animation:pulse 1.5s infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
-    input[type=range]{width:100%;height:10px;-webkit-appearance:none;appearance:none;background:#e2e8f0;border-radius:8px;outline:none}
-    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:#2563eb;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.15)}
-    .num-grid{width:100%;display:grid;grid-template-columns:repeat(11,1fr);gap:3px}
-    .num-grid button{padding:8px 2px;border-radius:8px;font-size:11px;font-weight:800;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer}
-    .num-grid button.active{background:#2563eb;color:white;border-color:#2563eb;transform:scale(1.08)}
-    .score-desc-text{font-size:13px;font-weight:800}
-    .score-desc-text.green{color:#047857}.score-desc-text.yellow{color:#b45309}.score-desc-text.red{color:#b91c1c}
-    .nav-row{width:100%;display:flex;gap:10px;border-top:1px solid #f1f5f9;padding-top:16px}
-    .nav-row button{flex:1;padding:14px;border-radius:20px;font-weight:700;font-size:13px}
-    textarea{width:100%;padding:14px;border:1px solid #d1d5db;border-radius:16px;font-size:13px;font-family:inherit;resize:vertical;outline:none}
-    textarea:focus{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.2)}
-    .success-icon{font-size:56px}
-    .hidden{display:none!important}
-    .tip-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:16px;padding:12px 14px;font-size:11px;color:#1e40af;text-align:left;line-height:1.6}
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Sarabun', 'Noto Sans Thai', sans-serif; }
+    body { background-color: #f1f5f9; color: #1e293b; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 16px; }
+    .container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 14px; }
+    .header-bar { background: white; border-radius: 20px; padding: 14px 20px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04); }
+    .header-bar .brand { display: flex; align-items: center; gap: 10px; }
+    .header-bar .icon-box { width: 40px; height: 40px; border-radius: 12px; background: #ecfdf5; color: #00B900; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid #a7f3d0; }
+    .header-bar .title { font-weight: 900; font-size: 15px; color: #1e293b; }
+    .header-bar .subtitle { font-size: 11px; color: #64748b; font-weight: 600; }
+    .card { background: white; border-radius: 28px; padding: 24px 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
+    
+    .grandma-avatar { width: 96px; height: 96px; border-radius: 9999px; background: #ecfdf5; border: 4px solid #bbf7d0; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); font-size: 48px; }
+    .grandma-large { width: 160px; height: 160px; border-radius: 9999px; background: #f8fafc; border: 4px solid #bbf7d0; display: flex; align-items: center; justify-content: center; font-size: 76px; overflow: hidden; box-shadow: inset 0 2px 6px rgba(0,0,0,0.06); }
+    
+    .patient-badge { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; }
+    .card-title { font-weight: 900; font-size: 22px; color: #0f172a; line-height: 1.3; }
+    .card-desc { font-size: 13px; color: #64748b; font-weight: 600; line-height: 1.5; }
+    
+    .warning-box { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 18px; padding: 14px 16px; font-size: 12px; color: #92400e; text-align: left; display: flex; gap: 10px; line-height: 1.5; width: 100%; }
+    .tip-box { background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 18px; padding: 14px 16px; font-size: 12px; color: #065f46; text-align: left; line-height: 1.5; width: 100%; }
+    
+    .btn { width: 100%; padding: 16px; border-radius: 20px; font-weight: 900; font-size: 16px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease; }
+    .btn-primary { background: #059669; color: white; border: 2px solid #047857; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); }
+    .btn-primary:hover { background: #047857; }
+    .btn-primary:active { background: #065f46; transform: scale(0.99); }
+    .btn-secondary { background: #e2e8f0; color: #1e293b; border: 2px solid #cbd5e1; font-weight: 800; }
+    .btn-secondary:hover { background: #cbd5e1; }
+    .btn-secondary:active { background: #94a3b8; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    
+    .progress-row { width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; color: #64748b; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+    .progress-row .step-num { background: #ecfdf5; color: #047857; padding: 4px 14px; border-radius: 9999px; border: 1px solid #a7f3d0; font-weight: 900; }
+    
+    .symptom-label { font-weight: 900; font-size: 20px; color: #0f172a; line-height: 1.3; }
+    .symptom-desc { font-size: 13px; color: #64748b; font-weight: 700; }
+    .speak-btn { display: inline-flex; padding: 6px; border-radius: 9999px; background: #ecfdf5; border: 1px solid #a7f3d0; cursor: pointer; color: #059669; font-size: 20px; vertical-align: middle; }
+    
+    .score-labels { width: 100%; display: flex; justify-content: space-between; font-size: 13px; font-weight: 900; color: #64748b; }
+    .score-big { font-size: 36px; padding: 6px 30px; border-radius: 20px; font-weight: 900; border: 2px solid transparent; }
+    .score-big.green { background: #059669; color: white; border-color: #047857; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3); }
+    .score-big.yellow { background: #f59e0b; color: white; border-color: #d97706; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
+    .score-big.red { background: #dc2626; color: white; border-color: #b91c1c; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); animation: pulse 1.5s infinite; }
+    
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.8;} }
+    
+    input[type=range] { width: 100%; height: 16px; -webkit-appearance: none; appearance: none; background: #e2e8f0; border-radius: 8px; outline: none; margin: 14px 0; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 34px; height: 34px; border-radius: 50%; background: #059669; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 3px solid white; }
+    
+    .num-grid { width: 100%; display: grid; grid-template-columns: repeat(11, 1fr); gap: 3px; margin-bottom: 12px; }
+    .num-grid button { padding: 14px 0; border-radius: 12px; font-size: 15px; font-weight: 900; border: 2px solid #cbd5e1; background: white; color: #1e293b; cursor: pointer; transition: all 0.15s ease; }
+    .num-grid button.active.green { background: #059669; color: white; border-color: #047857; transform: scale(1.1); box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35); z-index: 2; }
+    .num-grid button.active.yellow { background: #f59e0b; color: white; border-color: #d97706; transform: scale(1.1); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.35); z-index: 2; }
+    .num-grid button.active.red { background: #dc2626; color: white; border-color: #b91c1c; transform: scale(1.1); box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35); z-index: 2; }
+    
+    .score-desc-text { font-size: 15px; font-weight: 900; padding: 12px 16px; border-radius: 16px; width: 100%; }
+    .score-desc-text.green { background: #ecfdf5; color: #065f46; border: 2px solid #a7f3d0; }
+    .score-desc-text.yellow { background: #fffbeb; color: #92400e; border: 2px solid #fde68a; }
+    .score-desc-text.red { background: #fef2f2; color: #b91c1c; border: 2px solid #fecaca; }
+    
+    .nav-row { width: 100%; display: flex; gap: 12px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+    .nav-row button { flex: 1; }
+    
+    .vital-grid { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 16px; border-radius: 20px; border: 1px solid #e2e8f0; text-align: left; }
+    .vital-field label { font-size: 12px; font-weight: 800; color: #334155; display: block; margin-bottom: 4px; }
+    .vital-field input { width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 13px; font-weight: 700; outline: none; background: white; }
+    .vital-field input:focus { border-color: #059669; ring: 2px #a7f3d0; }
+    
+    .round-selector { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; }
+    .round-btn { padding: 12px 14px; border-radius: 16px; border: 2px solid #cbd5e1; background: white; font-size: 13px; font-weight: 800; color: #334155; cursor: pointer; text-align: left; }
+    .round-btn.active { background: #059669; color: white; border-color: #047857; box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25); }
+    .round-btn .sub { font-size: 11px; font-weight: 500; opacity: 0.85; margin-top: 2px; }
+    
+    textarea { width: 100%; padding: 14px 16px; border: 1.5px solid #cbd5e1; border-radius: 18px; font-size: 14px; font-family: inherit; resize: vertical; outline: none; font-weight: 500; }
+    textarea:focus { border-color: #059669; box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2); }
+    
+    .hidden { display: none !important; }
+    .toggle-voice-btn { background: #ecfdf5; border: 1.5px solid #a7f3d0; color: #065f46; font-size: 13px; font-weight: 900; padding: 6px 14px; border-radius: 9999px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .toggle-voice-btn.off { background: #f1f5f9; border-color: #cbd5e1; color: #64748b; }
   </style>
 </head>
 <body>
 <div class="container" id="app">
 
+  <!-- Header Bar -->
   <div class="header-bar">
-    <div class="title">📋 แบบประเมินอาการ ESAS</div>
+    <div class="brand">
+      <div class="icon-box">🏥</div>
+      <div>
+        <div class="title">แบบประเมินอาการ ESAS</div>
+        <div class="subtitle">รพ.พล • Home Ward</div>
+      </div>
+    </div>
+    <button class="toggle-voice-btn" id="voiceToggle" onclick="toggleVoice()">
+      <span>🔊 เปิดเสียง</span>
+    </button>
   </div>
 
-  <!-- WELCOME -->
+  <!-- 1. WELCOME SCREEN -->
   <div class="card" id="welcomeScreen">
     <div class="grandma-avatar">👵</div>
-    <div class="card-title">ยินดีต้อนรับสู่ระบบทำแบบประเมินอาการ</div>
-    <div class="patient-name">คนไข้: <?= patientName ?> (HN: <?= patientHN ?>)</div>
-    <div class="card-desc">แบบประเมินนี้ใช้เพื่อติดตามอาการรายวัน<br>มีเสียงพูดภาษาไทยประกอบ 9 ข้อคำถาม</div>
+    <div class="card-title">ยินดีต้อนรับสู่ระบบประเมินอาการ</div>
+    <div class="patient-badge">👤 คนไข้: <?= patientName ?> (HN: <?= patientHN ?>)</div>
+    <div class="card-desc">แบบประเมิน 9 อาการหลัก เพื่อให้แพทย์และพยาบาลติดตามอาการได้ต่อเนื่อง<br>มีเสียงพูดภาษาไทยบรรยายอาการอย่างชัดเจน</div>
 
-    <!-- VOICE TEST BOX -->
-    <div class="voice-test-box" id="voiceTestBox">
-      <div class="status warn" id="voiceStatus">⏳ กำลังตรวจสอบระบบเสียง...</div>
-      <button class="btn btn-outline btn-sm" onclick="testVoice()" id="testVoiceBtn" disabled>🔊 ทดสอบเสียง</button>
-      <div style="font-size:10px;color:#64748b;margin-top:6px;display:none" id="voiceHint">
-        หากไม่ได้ยินเสียงภาษาไทย<br>กรุณาเปิดลิงก์นี้ด้วย <b>Chrome</b> หรือ <b>Safari</b><br>(ไม่ใช่แอป LINE)
+    <!-- Round Selection -->
+    <div style="width:100%; text-align:left;">
+      <div style="font-size:13px; font-weight:900; color:#334155; margin-bottom:8px;">⏰ เลือกรอบเวลาประเมิน:</div>
+      <div class="round-selector">
+        <button type="button" class="round-btn active" onclick="setRound('09:00', this)">
+          <div>รอบเช้า (09:00 น.)</div>
+          <div class="sub">ประเมินช่วงเช้าประจำวัน</div>
+        </button>
+        <button type="button" class="round-btn" onclick="setRound('14:00', this)">
+          <div>รอบบ่าย (14:00 น.)</div>
+          <div class="sub">ประเมินช่วงกลางวัน</div>
+        </button>
+        <button type="button" class="round-btn" onclick="setRound('18:00', this)">
+          <div>รอบเย็น (18:00 น.)</div>
+          <div class="sub">ประเมินช่วงค่ำก่อนนอน</div>
+        </button>
+        <button type="button" class="round-btn" onclick="setRound('SOS', this)">
+          <div>ฉุกเฉิน (SOS)</div>
+          <div class="sub">อาการเปลี่ยนแปลงกะทันหัน</div>
+        </button>
       </div>
     </div>
 
-    <div class="warning-box">🔊 <div><strong>คำแนะนำ:</strong><br>หากเปิดผ่าน LINE แล้วไม่ได้ยินเสียงพูด กด <strong>จุด 3 จุด มุมขวาบน → "เปิดด้วยเบราว์เซอร์อื่น"</strong></div></div>
-    <button class="btn btn-primary" onclick="startAssessment()">▶ เริ่มทำแบบประเมิน</button>
+    <div class="warning-box">
+      <span style="font-size:18px;">🔊</span>
+      <div><strong>คำแนะนำเรื่องเสียงพูด:</strong> หากเปิดผ่าน LINE แล้วไม่ได้ยินเสียง กรุณากด <strong>จุด 3 จุด มุมขวาบน → "เปิดด้วยเบราว์เซอร์อื่น"</strong> (Chrome หรือ Safari)</div>
+    </div>
+
+    <button class="btn btn-primary" onclick="startAssessment()">▶ เริ่มทำแบบประเมิน (เปิดเสียงพูด)</button>
   </div>
 
-  <!-- SYMPTOM -->
+  <!-- 2. SYMPTOM SCREEN (9 steps) -->
   <div class="card hidden" id="symptomScreen">
-    <div class="progress-row"><span>คนไข้: <?= patientName ?></span><span class="step-num" id="stepNum">ข้อที่ 1 / 9</span></div>
-    <div class="grandma-large" id="grandmaImg">👵</div>
-    <div style="display:flex;align-items:center;gap:6px"><div class="symptom-label" id="symptomLabel"></div><button class="speak-btn" onclick="speakSymptom()" title="ฟังเสียงพูด">🔊</button></div>
+    <div class="progress-row">
+      <span>คนไข้: <strong style="color:#0f172a;"><?= patientName ?></strong></span>
+      <span class="step-num" id="stepNum">ข้อที่ 1 / 9</span>
+    </div>
+    <div class="grandma-large" id="grandmaImg">😊</div>
+    <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+      <div class="symptom-label" id="symptomLabel"></div>
+      <button class="speak-btn" onclick="speakCurrentSymptomScore()" title="ฟังเสียงบรรยายอาการ">🔊</button>
+    </div>
     <div class="symptom-desc" id="symptomDesc"></div>
+
     <div style="width:100%">
-      <div class="score-labels"><span>0 (ดี/ปกติ)</span><span class="score-big green" id="scoreDisplay">0</span><span>10 (แย่ที่สุด)</span></div>
+      <div class="score-labels">
+        <span style="color:#047857;">0 (ไม่มีอาการ)</span>
+        <span class="score-big green" id="scoreDisplay">0</span>
+        <span style="color:#b91c1c;">10 (แย่ที่สุด)</span>
+      </div>
       <input type="range" min="0" max="10" value="0" id="scoreSlider" oninput="onSliderChange(this.value)">
       <div class="num-grid" id="numGrid"></div>
       <div class="score-desc-text green" id="scoreDescText"></div>
     </div>
+
     <div class="nav-row">
       <button class="btn btn-secondary" id="backBtn" onclick="prevStep()">◀ ย้อนกลับ</button>
       <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">ต่อไป ▶</button>
     </div>
   </div>
 
-  <!-- NOTES -->
+  <!-- 3. VITAL SIGNS & OTHER SCREEN -->
+  <div class="card hidden" id="vitalScreen">
+    <div class="progress-row">
+      <span>คนไข้: <strong style="color:#0f172a;"><?= patientName ?></strong></span>
+      <span class="step-num">สัญญาณชีพ</span>
+    </div>
+    <div class="card-title">สัญญาณชีพประจำวัน (ถ้ามี)</div>
+    <div class="card-desc">หากมีเครื่องวัดที่บ้าน สามารถกรอกข้อมูลได้ (ไม่บังคับ)</div>
+
+    <div class="vital-grid">
+      <div class="vital-field">
+        <label>🩺 ความดันโลหิต (BP)</label>
+        <input type="text" id="vitalBp" placeholder="เช่น 120/80">
+      </div>
+      <div class="vital-field">
+        <label>💓 ชีพจร (Pulse, bpm)</label>
+        <input type="number" id="vitalPulse" placeholder="เช่น 78">
+      </div>
+      <div class="vital-field">
+        <label>🌡️ อุณหภูมิ (°C)</label>
+        <input type="text" id="vitalTemp" placeholder="เช่น 36.8">
+      </div>
+      <div class="vital-field">
+        <label>💨 ออกซิเจน (SpO2, %)</label>
+        <input type="number" id="vitalSpo2" placeholder="เช่น 98">
+      </div>
+      <div class="vital-field" style="grid-column: span 2;">
+        <label>⚖️ น้ำหนักตัว (กก.)</label>
+        <input type="number" step="0.1" id="vitalWeight" placeholder="เช่น 52.5">
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-secondary" onclick="prevStep()">◀ ย้อนกลับ</button>
+      <button class="btn btn-primary" onclick="nextStep()">ต่อไป ▶</button>
+    </div>
+  </div>
+
+  <!-- 4. NOTES & SUBMIT SCREEN -->
   <div class="card hidden" id="notesScreen">
-    <div class="progress-row"><span>คนไข้: <?= patientName ?></span><span class="step-num">ขั้นตอนสุดท้าย</span></div>
+    <div class="progress-row">
+      <span>คนไข้: <strong style="color:#0f172a;"><?= patientName ?></strong></span>
+      <span class="step-num">ขั้นตอนสุดท้าย</span>
+    </div>
     <div class="card-title">บันทึกเพิ่มเติมถึงพยาบาล</div>
-    <div class="card-desc">ระบุอาการอื่นๆ เช่น ท้องผูก สะอึก หลับไม่สนิท หรือข้อความที่ต้องการแจ้ง</div>
+    <div class="card-desc">ระบุอาการอื่นๆ เช่น ท้องผูก สะอึก หลับไม่สนิท หรือข้อความที่ต้องการปรึกษา</div>
     <textarea id="notesInput" rows="4" placeholder="กรอกข้อความเพิ่มเติม (ไม่บังคับ)..."></textarea>
-    <div class="tip-box">💡 <strong>ตรวจสอบก่อนส่ง:</strong> กดย้อนกลับเพื่อตรวจทานคะแนนแต่ละข้อได้</div>
+    
+    <div class="tip-box">💡 <strong>ตรวจสอบก่อนส่ง:</strong> สามารถกดย้อนกลับเพื่อตรวจทานคะแนนแต่ละข้อได้</div>
+    
     <div class="nav-row">
       <button class="btn btn-secondary" onclick="prevStep()">◀ ย้อนกลับ</button>
       <button class="btn btn-primary" onclick="submitForm()" id="submitBtn">ส่งแบบประเมิน</button>
     </div>
   </div>
 
-  <!-- SUCCESS -->
+  <!-- 5. SUCCESS SCREEN -->
   <div class="card hidden" id="successScreen">
-    <div class="success-icon">✅</div>
-    <div class="card-title">ส่งแบบประเมินเรียบร้อย</div>
-    <div class="card-desc">ระบบได้บันทึกข้อมูลอาการของ<br><span style="color:#2563eb;font-weight:800">"<?= patientName ?>"</span> เรียบร้อยแล้ว<br>พยาบาลจะตรวจสอบผลการประเมินในระบบ</div>
-    <div class="tip-box">💡 หากผู้ป่วยมีอาการเปลี่ยนแปลงกะทันหัน กรุณาติดต่อสายด่วนโรงพยาบาลโดยตรงทันที</div>
+    <div style="font-size: 64px;">✅</div>
+    <div class="card-title" style="color: #065f46;">ส่งแบบประเมินเรียบร้อย</div>
+    <div class="card-desc">
+      ระบบได้บันทึกข้อมูลอาการของ <br>
+      <span style="color:#059669; font-weight:900; font-size:18px;">"<?= patientName ?>"</span> เรียบร้อยแล้ว<br>
+      พยาบาลจะติดตามผลจากระบบอย่างใกล้ชิด
+    </div>
+    <div class="tip-box">💚 หากผู้ป่วยมีอาการเปลี่ยนแปลงกะทันหัน กรุณาโทรติดต่อสายด่วนโรงพยาบาลพลโดยตรง</div>
   </div>
 
 </div>
 
 <script>
-  const TOKEN='<?= token ?>';
+  const TOKEN = '<?= token ?>';
+  let selectedRound = '09:00';
+  const THAI_NUMBER_WORDS = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า', 'สิบ'];
 
-  const symptoms=[
-    {key:'pain',label:'1. อาการปวด (Pain)',desc:'0 = ไม่ปวดเลย, 10 = ปวดรุนแรงที่สุด',voice:'ข้อที่หนึ่ง อาการปวด ศูนย์คือไม่มีอาการปวดเลย สิบคือปวดรุนแรงที่สุดเท่าที่จะเป็นไปได้ค่ะ'},
-    {key:'shortnessOfBreath',label:'2. หายใจเหนื่อยหอบ',desc:'0 = หายใจสะดวกดี, 10 = เหนื่อยหอบรุนแรงที่สุด',voice:'ข้อที่สอง อาการหายใจเหนื่อยหอบ ศูนย์คือหายใจสะดวกดีปกติ สิบคือหายใจลำบากและเหนื่อยหอบรุนแรงที่สุดค่ะ'},
-    {key:'tiredness',label:'3. ความเหนื่อยล้า/อ่อนเพลีย',desc:'0 = กระฉับกระเฉงดี, 10 = อ่อนเพลียรุนแรง',voice:'ข้อที่สาม ความเหนื่อยล้าหรืออ่อนเพลีย ศูนย์คือกระฉับกระเฉงดี สิบคืออ่อนเพลียรุนแรงจนขยับตัวไม่ไหวค่ะ'},
-    {key:'drowsiness',label:'4. ความง่วงซึม',desc:'0 = ตื่นตัวดี, 10 = ง่วงซึมตลอด',voice:'ข้อที่สี่ ความง่วงซึม ศูนย์คือตื่นตัวดีปกติ สิบคือง่วงซึมตลอดเวลาปลุกตื่นยากค่ะ'},
-    {key:'nausea',label:'5. อาการคลื่นไส้',desc:'0 = ไม่รู้สึกเลย, 10 = อาเจียนตลอด',voice:'ข้อที่ห้า อาการคลื่นไส้ ศูนย์คือไม่รู้สึกคลื่นไส้เลย สิบคือคลื่นไส้และอาเจียนรุนแรงตลอดเวลาค่ะ'},
-    {key:'appetite',label:'6. ความอยากอาหาร',desc:'0 = ทานได้ปกติ, 10 = เบื่ออาหารรุนแรง',voice:'ข้อที่หก ความอยากอาหาร ศูนย์คืออยากอาหารปกติรับประทานได้ดี สิบคือเบื่ออาหารอย่างรุนแรงและรับประทานไม่ได้เลยค่ะ'},
-    {key:'depression',label:'7. ซึมเศร้า',desc:'0 = อารมณ์ดี, 10 = เศร้าหดหู่รุนแรง',voice:'ข้อที่เจ็ด ความรู้สึกซึมเศร้า ศูนย์คืออารมณ์ดีปกติมีกำลังใจดี สิบคือซึมเศร้าหรือท้อแท้หดหู่รุนแรงที่สุดค่ะ'},
-    {key:'anxiety',label:'8. วิตกกังวล',desc:'0 = สงบดี, 10 = วิตกกังวลรุนแรง',voice:'ข้อที่แปด ความวิตกกังวล ศูนย์คือรู้สึกสงบปลอดภัยดีปกติ สิบคือกังวลกลัวกระสับกระส่ายรุนแรงที่สุดค่ะ'},
-    {key:'wellbeing',label:'9. สุขภาวะโดยรวม',desc:'0 = สบายดีมาก, 10 = แย่ที่สุด',voice:'ข้อที่เก้า ความรู้สึกสบายหรือสุขภาวะโดยรวม ศูนย์คือรู้สึกสบายตัวสบายใจดีมาก สิบคือไม่สบายตัวอย่างรุนแรงที่สุดค่ะ'}
+  const symptoms = [
+    { 
+      key: 'pain', 
+      label: '1. อาการปวด (Pain)', 
+      desc: '0 = ไม่ปวดเลย, 10 = ปวดรุนแรงที่สุดเท่าที่จะเป็นไปได้', 
+      voice: 'ข้อที่หนึ่ง อาการปวด ศูนย์คือไม่มีอาการปวดเลย สิบคือปวดรุนแรงที่สุดเท่าที่จะเป็นไปได้ค่ะ',
+      getSpeech: function(score, numWord) {
+        if (score === 0) return 'อาการปวด ศูนย์คะแนน ไม่มีอาการปวดเลย สบายดีเป็นปกติค่ะ';
+        if (score <= 3) return 'อาการปวด เลือกระดับ ' + numWord + ' คะแนน ปวดเล็กน้อย ยังทนไหวค่ะ';
+        if (score <= 6) return 'อาการปวด เลือกระดับ ' + numWord + ' คะแนน ปวดปานกลาง เริ่มรบกวนการใช้ชีวิตค่ะ';
+        if (score <= 8) return 'อาการปวด เลือกระดับ ' + numWord + ' คะแนน ปวดรุนแรง ควรรีบพักหรือแจ้งพยาบาลค่ะ';
+        return 'อาการปวด เลือกระดับ ' + numWord + ' คะแนน ปวดรุนแรงที่สุด หรือมีภาวะวิกฤตค่ะ';
+      }
+    },
+    { 
+      key: 'shortnessOfBreath', 
+      label: '2. หายใจเหนื่อยหอบ (Dyspnea)', 
+      desc: '0 = หายใจสะดวกดี, 10 = หายใจลำบาก เหนื่อยหอบรุนแรงที่สุด', 
+      voice: 'ข้อที่สอง อาการหายใจเหนื่อยหอบ ศูนย์คือหายใจสะดวกดีปกติ สิบคือหายใจลำบากและเหนื่อยหอบรุนแรงที่สุดค่ะ',
+      getSpeech: function(score, numWord) {
+        if (score === 0) return 'หายใจเหนื่อยหอบ ศูนย์คะแนน หายใจสะดวกดีเป็นปกติค่ะ';
+        if (score <= 3) return 'หายใจเหนื่อยหอบ เลือกระดับ ' + numWord + ' คะแนน เหนื่อยเล็กน้อยเวลาออกแรงค่ะ';
+        if (score <= 6) return 'หายใจเหนื่อยหอบ เลือกระดับ ' + numWord + ' คะแนน เหนื่อยปานกลาง เริ่มรู้สึกอึดอัดค่ะ';
+        if (score <= 8) return 'หายใจเหนื่อยหอบ เลือกระดับ ' + numWord + ' คะแนน เหนื่อยหอบรุนแรง ควรรีบใช้ออกซิเจนหรือแจ้งพยาบาลค่ะ';
+        return 'หายใจเหนื่อยหอบ เลือกระดับ ' + numWord + ' คะแนน หายใจลำบากวิกฤตค่ะ';
+      }
+    },
+    { 
+      key: 'tiredness', 
+      label: '3. ความเหนื่อยล้า / อ่อนเพลีย (Tiredness)', 
+      desc: '0 = กระฉับกระเฉงดี, 10 = อ่อนเพลียรุนแรงจนขยับตัวไม่ไหว', 
+      voice: 'ข้อที่สาม ความเหนื่อยล้าหรืออ่อนเพลีย ศูนย์คือกระฉับกระเฉงดี สิบคืออ่อนเพลียรุนแรงจนขยับตัวไม่ไหวค่ะ',
+      getSpeech: function(score, numWord) {
+        if (score === 0) return 'ความเหนื่อยล้าหรืออ่อนเพลีย ศูนย์คะแนน กระฉับกระเฉงดีเป็นปกติค่ะ';
+        if (score <= 3) return 'ความเหนื่อยล้า เลือกระดับ ' + numWord + ' คะแนน อ่อนเพลียเล็กน้อย พักแล้วดีขึ้นค่ะ';
+        if (score <= 6) return 'ความเหนื่อยล้า เลือกระดับ ' + numWord + ' คะแนน อ่อนเพลียปานกลาง ทำกิจวัตรได้ช้าลงค่ะ';
+        if (score <= 8) return 'ความเหนื่อยล้า เลือกระดับ ' + numWord + ' คะแนน อ่อนเพลียมาก แทบไม่มีแรงลุกค่ะ';
+        return 'ความเหนื่อยล้า เลือกระดับ ' + numWord + ' คะแนน อ่อนเพลียรุนแรง ขยับตัวไม่ไหวค่ะ';
+      }
+    },
+    { 
+      key: 'drowsiness', 
+      label: '4. ความง่วงซึม (Drowsiness)', 
+      desc: '0 = ตื่นตัวดี, 10 = ง่วงซึมตลอดเวลา ปลุกตื่นยาก', 
+      voice: 'ข้อที่สี่ ความง่วงซึม ศูนย์คือตื่นตัวดีปกติ สิบคือง่วงซึมตลอดเวลาปลุกตื่นยากค่ะ',
+      getSpeech: function(score, numWord) {
+        if (score === 0) return 'ความง่วงซึม ศูนย์คะแนน ตื่นตัวสดชื่นดีค่ะ';
+        if (score <= 3) return 'ความง่วงซึม เลือกระดับ ' + numWord + ' คะแนน ง่วงเล็กน้อยในระหว่างวันค่ะ';
+        if (score <= 6) return 'ความง่วงซึม เลือกระดับ ' + numWord + ' คะแนน ง่วงปานกลาง เผลอหลับบ่อยค่ะ';
+        if (score <= 8) return 'ความง่วงซึม เลือกระดับ ' + numWord + ' คะแนน ง่วงซึมมาก ตอบสนองช้าลงค่ะ';
+        return 'ความง่วงซึม เลือกระดับ ' + numWord + ' คะแนน ง่วงซึมตลอดเวลา ปลุกตื่นยากมากค่ะ';
+      }
+    },
+    { 
+      key: 'nausea', 
+      label: '5. อาการคลื่นไส้ (Nausea)', 
+      desc: '0 = ไม่รู้สึกคลื่นไส้เลย, 10 = คลื่นไส้และอาเจียนรุนแรงตลอด', 
+      voice: 'ข้อที่ห้า อาการคลื่นไส้ ศูนย์คือไม่รู้สึกคลื่นไส้เลย สิบคือคลื่นไส้และอาเจียนรุนแรงตลอดเวลาค่ะ',
+      getSpeech: function(score, numWord) {
+        if (score === 0) return 'อาการคลื่นไส้ ศูนย์คะแนน ไม่รู้สึกคลื่นไส้เลย สบายดีค่ะ';
+        if (score <= 3) return 'อาการคลื่นไส้ เลือกระดับ ' + numWord + ' คะแนน คลื่นไส้เล็กน้อย ไม่อาเจียนค่ะ';
+        if (score <= 6) return 'อาการคลื่นไส้ เลือกระดับ ' + numWord + ' คะแนน คลื่นไส้ปานกลาง รู้สึกพะอืดพะอมค่ะ';
+        if (score <= 8) return 'อาการคลื่นไส้ เลือกระดับ ' + numWord + ' คะแนน คลื่นไส้รุนแรง มีอาการอาเจียนค่ะ';
+        return 'อาการคลื่นไส้ เลือกระดับ ' + numWord + ' คะแนน คลื่นไส้อาเจียนรุนแรงตลอดเวลาค่ะ';
+      }
+    },
+    { 
+      key: 'appetite', 
+      label: '6. ความอยากอาหาร (Lack of Appetite)', 
+      desc: '0 = ทานได้ปกติ, 10 = เบื่ออาหารอย่างรุนแรง ทานไม่ได้เลย', 
+      voice: 'ข้อที่หก ความอยากอาหาร ศูนย์คืออยากอาหารปกติรับประทานได้ดี สิบคือเบื่ออาหารอย่างรุนแรงและรับประทานไม่ได้เลยค่ะ',
+      getSpeech: function(score, numWord) {
+        if (score === 0) return 'ความอยากอาหาร ศูนย์คะแนน รับประทานอาหารได้ปกติ เอร็ดอร่อยดีค่ะ';
+        if (score <= 3) return 'ความอยากอาหาร เลือกระดับ ' + numWord + ' คะแนน เบื่ออาหารเล็กน้อย ยังทานได้พอสมควรค่ะ';
+        if (score <= 6) return 'ความอยากอาหาร เลือกระดับ ' + numWord + ' คะแนน เบื่ออาหารปานกลาง ทานได้ลดลงครึ่งหนึ่งค่ะ';
+        if (score <= 8) return 'ความอยากอาหาร เลือกระดับ ' + numWord + ' คะแนน เบื่ออาหารมาก ทานได้เพียงเล็กน้อยค่ะ';
+        return 'ความอยากอาหาร เลือกระดับ ' + numWord + ' คะแนน เบื่ออาหารรุนแรง ทานอาหารไม่ได้เลยค่ะ';
+      }
+    },
+    { 
+      key: 'depression', 
+      label: '7. ความรู้สึกซึมเศร้า (Depression)', 
+      desc: '0 = อารมณ์ดี มีกำลังใจ, 10 = ซึมเศร้า ท้อแท้หดหู่รุนแรงที่สุด', 
+      voice: 'ข้อที่เจ็ด ความรู้สึกซึมเศร้า ศูนย์คืออารมณ์ดีปกติมีกำลังใจดี สิบคือซึมเศร้าหรือท้อแท้หดหู่รุนแรงที่สุดค่ะ',
+      getSpeech: function(score, numWord) {
+        if (score === 0) return 'ความรู้สึกซึมเศร้า ศูนย์คะแนน อารมณ์ดี มีกำลังใจแจ่มใสค่ะ';
+        if (score <= 3) return 'ความรู้สึกซึมเศร้า เลือกระดับ ' + numWord + ' คะแนน ซึมเศร้าหรือเหงาเล็กน้อยค่ะ';
+        if (score <= 6) return 'ความรู้สึกซึมเศร้า เลือกระดับ ' + numWord + ' คะแนน รู้สึกหดหู่ท้อแท้ปานกลางค่ะ';
+        if (score <= 8) return 'ความรู้สึกซึมเศร้า เลือกระดับ ' + numWord + ' คะแนน ซึมเศร้ามาก รู้สึกหมดหวังค่ะ';
+        return 'ความรู้สึกซึมเศร้า เลือกระดับ ' + numWord + ' คะแนน ท้อแท้หดหู่รุนแรงที่สุดค่ะ';
+      }
+    },
+    { 
+      key: 'anxiety', 
+      label: '8. ความวิตกกังวล (Anxiety)', 
+      desc: '0 = สงบ ปลอดภัยดี, 10 = วิตกกังวล กลัว กระสับกระส่ายรุนแรง', 
+      voice: 'ข้อที่แปด ความวิตกกังวล ศูนย์คือรู้สึกสงบปลอดภัยดีปกติ สิบคือกังวลกลัวกระสับกระส่ายรุนแรงที่สุดค่ะ',
+      getSpeech: function(score, numWord) {
+        if (score === 0) return 'ความวิตกกังวล ศูนย์คะแนน รู้สึกสงบ ปลอดภัย สบายใจดีค่ะ';
+        if (score <= 3) return 'ความวิตกกังวล เลือกระดับ ' + numWord + ' คะแนน กังวลเล็กน้อย ยังควบคุมได้ค่ะ';
+        if (score <= 6) return 'ความวิตกกังวล เลือกระดับ ' + numWord + ' คะแนน กังวลปานกลาง รู้สึกกระวนกระวายค่ะ';
+        if (score <= 8) return 'ความวิตกกังวล เลือกระดับ ' + numWord + ' คะแนน กังวลมาก กลัว กระสับกระส่ายค่ะ';
+        return 'ความวิตกกังวล เลือกระดับ ' + numWord + ' คะแนน วิตกกังวลและตื่นตระหนกรุนแรงที่สุดค่ะ';
+      }
+    },
+    { 
+      key: 'wellbeing', 
+      label: '9. สุขภาวะโดยรวม (Overall Wellbeing)', 
+      desc: '0 = สบายตัวสบายใจดีมาก, 10 = รู้สึกไม่สบายตัวแย่ที่สุด', 
+      voice: 'ข้อที่เก้า ความรู้สึกสบายหรือสุขภาวะโดยรวม ศูนย์คือรู้สึกสบายตัวสบายใจดีมาก สิบคือไม่สบายตัวอย่างรุนแรงที่สุดค่ะ',
+      getSpeech: function(score, numWord) {
+        if (score === 0) return 'สุขภาวะโดยรวม ศูนย์คะแนน สบายตัว สบายใจดีมากค่ะ';
+        if (score <= 3) return 'สุขภาวะโดยรวม เลือกระดับ ' + numWord + ' คะแนน รู้สึกสบายดี มีอาการรบกวนเพียงเล็กน้อยค่ะ';
+        if (score <= 6) return 'สุขภาวะโดยรวม เลือกระดับ ' + numWord + ' คะแนน ไม่ค่อยสบายตัว ปานกลางค่ะ';
+        if (score <= 8) return 'สุขภาวะโดยรวม เลือกระดับ ' + numWord + ' คะแนน ไม่สบายตัวมาก รู้สึกทรมานค่ะ';
+        return 'สุขภาวะโดยรวม เลือกระดับ ' + numWord + ' คะแนน รู้สึกแย่และทรมานที่สุดค่ะ';
+      }
+    }
   ];
 
-  const scores={pain:0,shortnessOfBreath:0,tiredness:0,drowsiness:0,nausea:0,appetite:0,depression:0,anxiety:0,wellbeing:0};
-  let currentStep=0, autoPlayVoice=true, assessmentStarted=false;
-  let thaiVoice=null, voiceReady=false;
+  const scores = { pain: 0, shortnessOfBreath: 0, tiredness: 0, drowsiness: 0, nausea: 0, appetite: 0, depression: 0, anxiety: 0, wellbeing: 0 };
+  let currentStep = 0; // 0-8: symptoms, 9: vitals, 10: notes
+  let autoPlayVoice = true;
+  let thaiVoice = null;
 
-  function show(id){document.getElementById(id).classList.remove('hidden')}
-  function hide(id){document.getElementById(id).classList.add('hidden')}
-  function hideAll(){hide('welcomeScreen');hide('symptomScreen');hide('notesScreen');hide('successScreen')}
-  function getScoreClass(v){return v>=7?'red':v>=4?'yellow':'green'}
-  function getGrandmaEmoji(v){return v<=3?'😊':v<=6?'😐':'😟'}
+  function show(id) { document.getElementById(id).classList.remove('hidden'); }
+  function hide(id) { document.getElementById(id).classList.add('hidden'); }
+  function hideAll() { hide('welcomeScreen'); hide('symptomScreen'); hide('vitalScreen'); hide('notesScreen'); hide('successScreen'); }
+  
+  function getScoreClass(v) { return v >= 7 ? 'red' : v >= 4 ? 'yellow' : 'green'; }
+  function getGrandmaEmoji(v) { return v <= 3 ? '😊' : v <= 6 ? '😐' : '😟'; }
 
-  function getScoreDesc(val,key){
-    var d={
-      pain:['ไม่มีอาการปวดเลย สบายดี 😊','ปวดเล็กน้อยมากๆ 👍','ปวดรำคาญเล็กน้อย 👍','ปวดน้อย เริ่มรบกวนสมาธิ 👍','ปวดปานกลาง 😐','ปวดปานกลางค่อนข้างมาก 😐','ปวดมาก รบกวนการนอน 😐','ปวดรุนแรง ขยับตัวลำบาก 😟','ปวดรุนแรงมาก 😟','ปวดรุนแรงแทบทนไม่ไหว 🚨','ปวดรุนแรงที่สุด 🚨'],
-      shortnessOfBreath:['หายใจสะดวกดี 😊','เหนื่อยเล็กน้อย 👍','หายใจตึงเล็กน้อย 👍','หายใจเร็วขึ้นเล็กน้อย 👍','เหนื่อยปานกลาง 😐','เหนื่อยต้องหยุดพัก 😐','หอบปานกลาง 😐','เหนื่อยหอบมาก 😟','เหนื่อยหอบรุนแรง 😟','หายใจลำบากรุนแรง 🚨','เหนื่อยหอบที่สุด 🚨'],
-      tiredness:['กระฉับกระเฉงดี 😊','อ่อนเพลียเล็กน้อย 👍','เหนื่อยล้าเล็กน้อย 👍','เพลียเล็กน้อย 👍','เหนื่อยล้าปานกลาง 😐','อ่อนเพลียปานกลาง 😐','เหนื่อยล้ามาก 😐','อ่อนเพลียรุนแรง 😟','เหนื่อยล้ารุนแรงมาก 😟','แทบขยับไม่ไหว 🚨','หมดแรง 🚨'],
-      drowsiness:['ตื่นตัวดี 😊','ง่วงเล็กน้อย 👍','ตาปรือเล็กน้อย 👍','ง่วงซึมเล็กน้อย 👍','ง่วงซึมปานกลาง 😐','เคลิ้มหลับบ่อย 😐','ง่วงซึมมาก 😐','หลับเป็นส่วนใหญ่ 😟','ง่วงซึมรุนแรง 😟','ปลุกตื่นยากมาก 🚨','ปลุกไม่ตื่น 🚨'],
-      nausea:['ไม่รู้สึกเลย 😊','พะอืดพะอมเล็กน้อย 👍','คลื่นไส้เล็กน้อย 👍','มวนท้องเล็กน้อย 👍','คลื่นไส้ปานกลาง 😐','คลื่นไส้ปานกลาง 😐','คลื่นไส้มาก 😐','คลื่นไส้รุนแรง 😟','อาเจียนหลายครั้ง 😟','จิบน้ำก็อาเจียน 🚨','อาเจียนรุนแรงที่สุด 🚨'],
-      appetite:['ทานได้ปกติ 😊','เบื่อเล็กน้อย 👍','ทานน้อยลงเล็กน้อย 👍','เลือกทานที่ชอบ 👍','เบื่อปานกลาง 😐','ทานได้ครึ่งหนึ่ง 😐','เบื่อมาก 😐','ทานแข็งไม่ได้ 😟','จิบได้เฉพาะน้ำ 😟','ไม่ทานเลย 🚨','ปฏิเสธอาหารและน้ำ 🚨'],
-      depression:['อารมณ์ดี 😊','เศร้าเล็กน้อย 👍','ดรอปเล็กน้อย 👍','หงอยเล็กน้อย 👍','ซึมเศร้าปานกลาง 😐','ท้อแท้ปานกลาง 😐','เศร้าหมองมาก 😐','ซึมเศร้ารุนแรง 😟','ท้อแท้รุนแรงมาก 😟','เศร้าหดหู่รุนแรง 🚨','ซึมเศร้าที่สุด 🚨'],
-      anxiety:['สงบดี 😊','กังวลเล็กน้อย 👍','วิตกเล็กน้อย 👍','คิดมากเล็กน้อย 👍','กังวลปานกลาง 😐','กระสับกระส่าย 😐','วิตกกังวลมาก 😐','กลัวรุนแรง 😟','กระสับกระส่ายมาก 😟','วิตกรุนแรง 🚨','หวาดกลัวที่สุด 🚨'],
-      wellbeing:['สบายดีมาก 😊','สบายดี 👍','สุขภาวะดี 👍','รำคาญตัวเล็กน้อย 👍','ไม่ค่อยสบาย 😐','รู้สึกแย่ปานกลาง 😐','ไม่สบายตัวมาก 😐','รู้สึกแย่รุนแรง 😟','ทรมานกายใจ 😟','ทรมานรุนแรง 🚨','แย่ที่สุด 🚨']
-    };
-    return (d[key]||[])[val]||'';
+  function getScoreDesc(val) {
+    if (val === 0) return 'ไม่มีอาการเลย สบายดีเป็นปกติ 😊';
+    if (val <= 3) return 'อาการระดับน้อย สบายดีอยู่ ยังทนไหว 👍';
+    if (val <= 6) return 'อาการระดับปานกลาง เริ่มรู้สึกอึดอัดรบกวน 😐';
+    if (val <= 8) return 'อาการระดับรุนแรง ควรรีบพักหรือแจ้งพยาบาล 😟';
+    return 'อาการระดับรุนแรงที่สุด / วิกฤต 🚨';
   }
 
-  // ============ TTS: speechSynthesis (ใช้เสียงไทยจากเครื่อง) ============
-  function initVoices(){
-    if (!('speechSynthesis' in window)) {
-      document.getElementById('voiceStatus').textContent = '❌ ไม่รองรับเสียงพูด';
-      return;
-    }
-    var voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-      for (var i = 0; i < voices.length; i++) {
-        if (voices[i].lang.indexOf('th') === 0) { thaiVoice = voices[i]; break; }
-      }
-      updateVoiceUI();
-    }
-    window.speechSynthesis.onvoiceschanged = function(){
-      var v = window.speechSynthesis.getVoices();
-      for (var j = 0; j < v.length; j++) {
-        if (v[j].lang.indexOf('th') === 0) { thaiVoice = v[j]; break; }
-      }
-      updateVoiceUI();
-    };
+  function setRound(roundVal, btn) {
+    selectedRound = roundVal;
+    document.querySelectorAll('.round-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
   }
 
-  function updateVoiceUI(){
-    voiceReady = true;
-    var s = document.getElementById('voiceStatus');
-    var b = document.getElementById('testVoiceBtn');
-    var h = document.getElementById('voiceHint');
-    b.disabled = false;
-    if (thaiVoice) {
-      s.textContent = '✅ เสียงไทย: ' + thaiVoice.name;
-      s.className = 'status ok'; h.style.display = 'none';
+  function toggleVoice() {
+    autoPlayVoice = !autoPlayVoice;
+    var btn = document.getElementById('voiceToggle');
+    if (autoPlayVoice) {
+      btn.className = 'toggle-voice-btn';
+      btn.innerHTML = '<span>🔊 เปิดเสียง</span>';
+      speakThai('เปิดระบบเสียงพูดแล้วค่ะ');
     } else {
-      s.textContent = '⚠️ ไม่พบเสียงไทย (จะใช้เสียงสำรอง)';
-      s.className = 'status warn'; h.style.display = 'block';
+      btn.className = 'toggle-voice-btn off';
+      btn.innerHTML = '<span>🔇 ปิดเสียง</span>';
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     }
   }
 
-  function testVoice(){
-    speakThai('สวัสดีค่ะ ระบบเสียงพูดภาษาไทยพร้อมใช้งานแล้ว');
-  }
-
-  function speak(text){
-    speakThai(text);
-  }
-
-  function speakThai(text){
+  function initVoices() {
     if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(text);
-    u.lang = 'th-TH'; u.rate = 0.85; u.pitch = 1; u.volume = 1;
-    if (thaiVoice) u.voice = thaiVoice;
-    window.speechSynthesis.speak(u);
+    var updateVoice = function() {
+      var voices = window.speechSynthesis.getVoices();
+      for (var i = 0; i < voices.length; i++) {
+        var v = voices[i];
+        if (v.lang === 'th-TH' || v.lang.indexOf('th') === 0 || v.name.indexOf('Thai') >= 0 || v.name.indexOf('Premwadee') >= 0 || v.name.indexOf('Niwat') >= 0) {
+          thaiVoice = v;
+          break;
+        }
+      }
+    };
+    updateVoice();
+    window.speechSynthesis.onvoiceschanged = updateVoice;
+  }
+
+  function speakThai(text) {
+    if (!autoPlayVoice || !('speechSynthesis' in window) || !text) return;
+    try {
+      window.speechSynthesis.cancel();
+      var cleanText = text.replace(/[😊👍😐😟🚨💚❤️🩺📝]/g, '').trim();
+      var u = new SpeechSynthesisUtterance(cleanText);
+      u.lang = 'th-TH';
+      u.rate = 0.9;
+      u.pitch = 1.0;
+      if (thaiVoice) u.voice = thaiVoice;
+      window.speechSynthesis.speak(u);
+    } catch(e) {}
   }
 
   initVoices();
 
-  function speakSymptom(){if(currentStep<9) speak(symptoms[currentStep].voice);}
-
-  // ============ RENDER ============
-  function renderSymptom(){
-    var s=symptoms[currentStep];
-    document.getElementById('symptomLabel').textContent=s.label;
-    document.getElementById('symptomDesc').textContent=s.desc;
-    document.getElementById('stepNum').textContent='ข้อที่ '+(currentStep+1)+' / 9';
-    var val=scores[s.key];
-    document.getElementById('scoreSlider').value=val;
-    document.getElementById('scoreDisplay').textContent=val;
-    document.getElementById('scoreDisplay').className='score-big '+getScoreClass(val);
-    document.getElementById('grandmaImg').textContent=getGrandmaEmoji(val);
-    document.getElementById('scoreDescText').textContent=getScoreDesc(val,s.key);
-    document.getElementById('scoreDescText').className='score-desc-text '+getScoreClass(val);
-    var grid=document.getElementById('numGrid'),h='';
-    for(var i=0;i<=10;i++) h+='<button class="'+(val===i?'active':'')+'" onclick="setScore('+i+')">'+i+'</button>';
-    grid.innerHTML=h;
-    document.getElementById('backBtn').style.visibility=currentStep===0?'hidden':'visible';
-    document.getElementById('backBtn').disabled=currentStep===0;
-    if(autoPlayVoice&&assessmentStarted) setTimeout(function(){speak(s.voice);},300);
+  function speakCurrentSymptomScore() {
+    if (currentStep < 9) {
+      var s = symptoms[currentStep];
+      var scoreVal = scores[s.key];
+      var numWord = THAI_NUMBER_WORDS[scoreVal] || String(scoreVal);
+      speakThai(s.getSpeech(scoreVal, numWord));
+    }
   }
 
-  function startAssessment(){hideAll();show('symptomScreen');assessmentStarted=true;currentStep=0;renderSymptom();}
-  function nextStep(){if(currentStep<8){currentStep++;renderSymptom();}else if(currentStep===8){currentStep=9;hideAll();show('notesScreen');if(autoPlayVoice) setTimeout(function(){speak('ขั้นตอนสุดท้าย กรุณากรอกบันทึกเพิ่มเติมถึงพยาบาล และกดส่งแบบประเมินค่ะ');},300);}}
-  function prevStep(){if(currentStep===9){currentStep=8;hideAll();show('symptomScreen');renderSymptom();}else if(currentStep>0){currentStep--;renderSymptom();}}
-
-  function setScore(val){
-    var key=symptoms[currentStep].key;scores[key]=val;
-    document.getElementById('scoreSlider').value=val;
-    document.getElementById('scoreDisplay').textContent=val;
-    document.getElementById('scoreDisplay').className='score-big '+getScoreClass(val);
-    document.getElementById('grandmaImg').textContent=getGrandmaEmoji(val);
-    document.getElementById('scoreDescText').textContent=getScoreDesc(val,key);
-    document.getElementById('scoreDescText').className='score-desc-text '+getScoreClass(val);
-    var btns=document.getElementById('numGrid').querySelectorAll('button');
-    for(var i=0;i<btns.length;i++) btns[i].className=i===val?'active':'';
-    if(autoPlayVoice&&assessmentStarted){var desc=getScoreDesc(val,key);if(desc) speak(desc);}
+  function renderSymptom() {
+    var s = symptoms[currentStep];
+    document.getElementById('symptomLabel').textContent = s.label;
+    document.getElementById('symptomDesc').textContent = s.desc;
+    document.getElementById('stepNum').textContent = 'ข้อที่ ' + (currentStep + 1) + ' / 9';
+    var val = scores[s.key];
+    document.getElementById('scoreSlider').value = val;
+    document.getElementById('scoreDisplay').textContent = val;
+    document.getElementById('scoreDisplay').className = 'score-big ' + getScoreClass(val);
+    document.getElementById('grandmaImg').textContent = getGrandmaEmoji(val);
+    document.getElementById('scoreDescText').textContent = getScoreDesc(val);
+    document.getElementById('scoreDescText').className = 'score-desc-text ' + getScoreClass(val);
+    
+    var grid = document.getElementById('numGrid'), h = '';
+    for (var i = 0; i <= 10; i++) {
+      var colorCls = getScoreClass(i);
+      var activeCls = (val === i ? 'active ' + colorCls : '');
+      h += '<button type="button" class="' + activeCls + '" onclick="setScore(' + i + ')">' + i + '</button>';
+    }
+    grid.innerHTML = h;
+    document.getElementById('backBtn').disabled = (currentStep === 0);
+    
+    if (autoPlayVoice) {
+      setTimeout(function() { speakThai(s.voice); }, 300);
+    }
   }
-  function onSliderChange(v){setScore(parseInt(v));}
 
-  // ============ SUBMIT ============
-  function submitForm(){
-    var btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='กำลังส่ง...';
-    var notes=document.getElementById('notesInput').value;
-    google.script.run
-      .withSuccessHandler(function(r){r=JSON.parse(r);if(r.success){hideAll();show('successScreen');if(autoPlayVoice) speak('ส่งแบบประเมินเรียบร้อย ขอบคุณค่ะ เจ้าหน้าที่จะตรวจสอบอาการของคนไข้ค่ะ');}else{alert('เกิดข้อผิดพลาด: '+r.error);btn.disabled=false;btn.textContent='ส่งแบบประเมิน';}})
-      .withFailureHandler(function(){alert('ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่');btn.disabled=false;btn.textContent='ส่งแบบประเมิน';})
-      .doPost(TOKEN,JSON.stringify(scores),notes,'09:00');
+  function startAssessment() {
+    hideAll();
+    show('symptomScreen');
+    currentStep = 0;
+    renderSymptom();
+  }
+
+  function setScore(val) {
+    var s = symptoms[currentStep];
+    scores[s.key] = val;
+    document.getElementById('scoreSlider').value = val;
+    document.getElementById('scoreDisplay').textContent = val;
+    document.getElementById('scoreDisplay').className = 'score-big ' + getScoreClass(val);
+    document.getElementById('grandmaImg').textContent = getGrandmaEmoji(val);
+    document.getElementById('scoreDescText').textContent = getScoreDesc(val);
+    document.getElementById('scoreDescText').className = 'score-desc-text ' + getScoreClass(val);
+    
+    var btns = document.getElementById('numGrid').querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      var colorCls = getScoreClass(i);
+      btns[i].className = (i === val ? 'active ' + colorCls : '');
+    }
+    
+    if (autoPlayVoice) {
+      var numWord = THAI_NUMBER_WORDS[val] || String(val);
+      speakThai(s.getSpeech(val, numWord));
+    }
+  }
+
+  function onSliderChange(v) { setScore(parseInt(v)); }
+
+  function nextStep() {
+    if (currentStep < 8) {
+      currentStep++;
+      renderSymptom();
+    } else if (currentStep === 8) {
+      currentStep = 9;
+      hideAll();
+      show('vitalScreen');
+      if (autoPlayVoice) speakThai('สัญญาณชีพและอาการอื่นๆ หากมีเครื่องวัดที่บ้าน สามารถกรอกได้ค่ะ');
+    } else if (currentStep === 9) {
+      currentStep = 10;
+      hideAll();
+      show('notesScreen');
+      if (autoPlayVoice) speakThai('ขั้นตอนสุดท้าย กรุณากรอกบันทึกเพิ่มเติมถึงพยาบาล และกดส่งแบบประเมินค่ะ');
+    }
+  }
+
+  function prevStep() {
+    if (currentStep === 10) {
+      currentStep = 9;
+      hideAll();
+      show('vitalScreen');
+    } else if (currentStep === 9) {
+      currentStep = 8;
+      hideAll();
+      show('symptomScreen');
+      renderSymptom();
+    } else if (currentStep > 0) {
+      currentStep--;
+      renderSymptom();
+    }
+  }
+
+  function submitForm() {
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'กำลังส่งข้อมูล...';
+    
+    var notes = document.getElementById('notesInput').value;
+    var payload = {
+      token: TOKEN,
+      scores: scores,
+      round: selectedRound,
+      notes: notes,
+      vitalSigns: {
+        bp: document.getElementById('vitalBp').value || '',
+        pulse: document.getElementById('vitalPulse').value || '',
+        temp: document.getElementById('vitalTemp').value || '',
+        spo2: document.getElementById('vitalSpo2').value || '',
+        weight: document.getElementById('vitalWeight').value || ''
+      }
+    };
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function(response) {
+          hideAll();
+          show('successScreen');
+          if (autoPlayVoice) speakThai('ส่งแบบประเมินเรียบร้อย ขอบคุณค่ะ เจ้าหน้าที่จะตรวจสอบอาการของคนไข้ค่ะ');
+        })
+        .withFailureHandler(function(err) {
+          alert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + (err.message || err));
+          btn.disabled = false;
+          btn.textContent = 'ส่งแบบประเมิน';
+        })
+        .submitAssessmentFromForm(JSON.stringify(payload));
+    } else {
+      fetch(window.location.href.split('?')[0] + '?path=assessments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        hideAll();
+        show('successScreen');
+        if (autoPlayVoice) speakThai('ส่งแบบประเมินเรียบร้อย ขอบคุณค่ะ');
+      })
+      .catch(function(err) {
+        alert('เกิดข้อผิดพลาด: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'ส่งแบบประเมิน';
+      });
+    }
   }
 </script>
 </body>

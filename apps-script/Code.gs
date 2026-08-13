@@ -1,16 +1,18 @@
 /**
  * ==================================================================
  * Google Apps Script — Palliative Care Backend (Full API)
+ * ระบบดูแลผู้ป่วยประคับประคอง รพ.พล (Home Ward)
  * ==================================================================
- * แทนที่ server.js ทั้งหมด
  * 
- * Deploy เป็น Web App: Execute as "me", Access "Anyone"
+ * Deploy เป็น Web App:
+ *   - Execute as: "Me" (บัญชีของคุณ)
+ *   - Who has access: "Anyone" (ทุกคน)
  * 
  * Google Sheets structure:
- *   - users: admin accounts
- *   - patients: patient data + token
- *   - assessments: ESAS scores
- *   - event_logs: nursing event timeline
+ *   - users: บัญชีเจ้าหน้าที่ (admin / nurse)
+ *   - patients: ทะเบียนผู้ป่วย + ลิงก์ token
+ *   - assessments: คะแนน ESAS 9 อาการ + สัญญาณชีพ + อาการอื่น + บันทึก
+ *   - event_logs: บันทึกการพยาบาลและกิจกรรมไทม์ไลน์
  */
 
 // ==================== CONFIG ====================
@@ -19,8 +21,13 @@ const SHEET_PATIENTS = 'patients';
 const SHEET_ASSESSMENTS = 'assessments';
 const SHEET_EVENT_LOGS = 'event_logs';
 
-// Simple secret for token signing (เปลี่ยนเป็นอะไรก็ได้)
+// Simple secret for token signing (สามารถเปลี่ยนได้ตามต้องการ)
 const TOKEN_SECRET = 'palliative_care_secret_2024';
+
+// Telegram Notification Config
+// แนะนำตั้งค่าผ่าน Project Settings -> Script Properties (หรือกำหนดตรงนี้)
+const TELEGRAM_BOT_TOKEN = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN') || '';
+const TELEGRAM_CHAT_ID = PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID') || '';
 
 // ==================== MAIN ROUTER ====================
 
@@ -67,6 +74,10 @@ function doGet(e) {
     return getEventLogs(e.parameter.patientId, user);
   }
 
+  if (path === 'staff') {
+    return getStaff(user);
+  }
+
   return jsonResponse({ error: 'Not found' }, 404);
 }
 
@@ -107,6 +118,10 @@ function doPost(e) {
     return getAISummary(body.patientId, user);
   }
 
+  if (path === 'staff') {
+    return createStaff(body, user);
+  }
+
   return jsonResponse({ error: 'Not found' }, 404);
 }
 
@@ -119,6 +134,10 @@ function doPut(e) {
 
   if (path === 'patients') {
     return updatePatient(body, user);
+  }
+
+  if (path === 'staff') {
+    return updateStaff(body, user);
   }
 
   return jsonResponse({ error: 'Not found' }, 404);
@@ -134,7 +153,103 @@ function doDelete(e) {
     return deletePatient(e.parameter.patientId, user);
   }
 
+  if (path === 'staff') {
+    return deleteStaff(e.parameter.staffId, user);
+  }
+
   return jsonResponse({ error: 'Not found' }, 404);
+}
+
+// ==================== AUTH ====================
+
+// ==================== STAFF MANAGEMENT ====================
+
+function getStaff(requestingUser) {
+  if (requestingUser.role !== 'admin') {
+    return jsonResponse({ error: 'Admin access required' }, 403);
+  }
+  const sheet = getSheet(SHEET_USERS);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const staff = [];
+  for (let i = 1; i < data.length; i++) {
+    if (!data[i][0]) continue;
+    const s = {};
+    headers.forEach((h, idx) => { s[h] = data[i][idx] || ''; });
+    delete s.password; // Never expose password
+    staff.push(s);
+  }
+  return jsonResponse(staff);
+}
+
+function createStaff(body, requestingUser) {
+  if (requestingUser.role !== 'admin') {
+    return jsonResponse({ error: 'Admin access required' }, 403);
+  }
+  const { username, name, role, password } = body;
+  if (!username || !name || !role || !password) {
+    return jsonResponse({ error: 'Username, name, role, and password are required' }, 400);
+  }
+  const allowedRoles = ['admin', 'nurse'];
+  if (!allowedRoles.includes(role)) {
+    return jsonResponse({ error: 'Role must be admin or nurse' }, 400);
+  }
+  const sheet = getSheet(SHEET_USERS);
+  const data = sheet.getDataRange().getValues();
+  // Check duplicate username
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][1]).toLowerCase() === username.toLowerCase()) {
+      return jsonResponse({ error: 'Username already exists' }, 400);
+    }
+  }
+  const newId = 'u_' + Date.now();
+  sheet.appendRow([newId, username, password, role, name]);
+  return jsonResponse({ id: newId, username, name, role }, 201);
+}
+
+function updateStaff(body, requestingUser) {
+  if (requestingUser.role !== 'admin') {
+    return jsonResponse({ error: 'Admin access required' }, 403);
+  }
+  const { staffId, role, password, name } = body;
+  if (!staffId) return jsonResponse({ error: 'Staff ID required' }, 400);
+
+  const sheet = getSheet(SHEET_USERS);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const roleCol = headers.indexOf('role');
+  const passCol = headers.indexOf('password');
+  const nameCol = headers.indexOf('name');
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(staffId)) {
+      if (role && roleCol >= 0) sheet.getRange(i + 1, roleCol + 1).setValue(role);
+      if (password && passCol >= 0) sheet.getRange(i + 1, passCol + 1).setValue(password);
+      if (name && nameCol >= 0) sheet.getRange(i + 1, nameCol + 1).setValue(name);
+      return jsonResponse({ success: true });
+    }
+  }
+  return jsonResponse({ error: 'Staff not found' }, 404);
+}
+
+function deleteStaff(staffId, requestingUser) {
+  if (requestingUser.role !== 'admin') {
+    return jsonResponse({ error: 'Admin access required' }, 403);
+  }
+  if (!staffId) return jsonResponse({ error: 'Staff ID required' }, 400);
+  // Prevent self-deletion
+  if (String(staffId) === String(requestingUser.id)) {
+    return jsonResponse({ error: 'ไม่สามารถลบบัญชีตัวเองได้' }, 400);
+  }
+  const sheet = getSheet(SHEET_USERS);
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(staffId)) {
+      sheet.deleteRow(i + 1);
+      return jsonResponse({ message: 'Staff deleted' });
+    }
+  }
+  return jsonResponse({ error: 'Staff not found' }, 404);
 }
 
 // ==================== AUTH ====================
@@ -207,7 +322,7 @@ function getPatients() {
     const patient = {};
     headers.forEach((h, idx) => { patient[h] = row[idx] || ''; });
     
-    // HN/id ต้องเป็น string เสมอ (sheet อาจเก็บเป็น number)
+    // HN/id ต้องเป็น string เสมอ
     patient.HN = String(row[0]);
     patient.id = String(row[0]);
     
@@ -263,6 +378,18 @@ function createPatient(body, user) {
     address: address || '', responsibleStaff: responsibleStaff || 'พย.วิกานดา',
     clinicalNotes: clinicalNotes || '', latestAssessment: null
   };
+
+  // Telegram Alert for new patient registration
+  sendTelegramMessage(
+    `📋 *ลงทะเบียนผู้ป่วยใหม่ (Home Ward)*\n` +
+    `━━━━━━━━━━━━━━━━━━\n` +
+    `👤 *ผู้ป่วย:* ${name} (HN: \`${id}\`)\n` +
+    `🏥 *โรคหลัก:* ${disease}\n` +
+    `👵 *อายุ/เพศ:* ${age || '-'} ปี / ${gender || '-'}\n` +
+    `📞 *เบอร์ญาติ:* ${relativePhone} (${caregiverName || 'ญาติ'})\n` +
+    `👩‍⚕️ *ผู้ดูแลรับผิดชอบ:* ${responsibleStaff || 'พย.วิกานดา'}\n` +
+    `📝 *บันทึกแรกรับ:* ${clinicalNotes || '-'}`
+  );
   
   return jsonResponse(patient, 201);
 }
@@ -356,7 +483,11 @@ function verifyTokenAPI(token) {
   
   for (let i = 1; i < data.length; i++) {
     if (data[i][tokenCol] === token) {
-      return jsonResponse({ name: data[i][nameCol], disease: diseaseCol >= 0 ? data[i][diseaseCol] : '', HN: String(data[i][hnCol]) });
+      return jsonResponse({ 
+        name: data[i][nameCol], 
+        disease: diseaseCol >= 0 ? data[i][diseaseCol] : '', 
+        HN: String(data[i][hnCol]) 
+      });
     }
   }
   
@@ -398,8 +529,21 @@ function serveForm(token) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+/**
+ * Handle form submission directly from Apps Script Form.html (via google.script.run)
+ */
+function submitAssessmentFromForm(jsonString) {
+  try {
+    const payload = JSON.parse(jsonString);
+    const res = submitAssessment(payload);
+    return res.getContent();
+  } catch (e) {
+    return JSON.stringify({ error: e.message });
+  }
+}
+
 function submitAssessment(body) {
-  const { token, scores, notes, round } = body;
+  const { token, scores, notes, round, vitalSigns, otherSymptoms } = body;
   
   if (!token || !scores) {
     return jsonResponse({ error: 'Token and scores are required' }, 400);
@@ -411,14 +555,17 @@ function submitAssessment(body) {
   const pHeaders = pData[0];
   const tokenCol = pHeaders.indexOf('token');
   const hnCol = pHeaders.indexOf('HN');
+  const nameCol = pHeaders.indexOf('name');
   const statusCol = pHeaders.indexOf('status');
   
   let patientRow = -1;
   let patientHN = '';
+  let patientName = '';
   for (let i = 1; i < pData.length; i++) {
     if (pData[i][tokenCol] === token) {
       patientRow = i;
       patientHN = pData[i][hnCol];
+      patientName = pData[i][nameCol];
       break;
     }
   }
@@ -432,7 +579,8 @@ function submitAssessment(body) {
   const today = new Date();
   const dateStr = Utilities.formatDate(today, 'GMT+7', 'yyyy-MM-dd');
   
-  assessSheet.appendRow([
+  const vs = vitalSigns || {};
+  const newRow = [
     'a_' + Date.now(),
     patientHN,
     dateStr,
@@ -446,13 +594,76 @@ function submitAssessment(body) {
     parseInt(scores.depression) || 0,
     parseInt(scores.anxiety) || 0,
     parseInt(scores.wellbeing) || 0,
+    vs.bp || '',
+    vs.pulse || '',
+    vs.temp || '',
+    vs.spo2 || '',
+    vs.weight || '',
+    otherSymptoms || '',
     notes || ''
-  ]);
+  ];
+
+  assessSheet.appendRow(newRow);
   
   // Update patient status
   if (statusCol >= 0) {
     patSheet.getRange(patientRow + 1, statusCol + 1).setValue('ประเมินแล้ว');
   }
+
+  // Check critical symptoms (score >= 7)
+  const criticalItems = [];
+  const symptomLabels = {
+    pain: 'ปวด (Pain)',
+    shortnessOfBreath: 'หายใจเหนื่อยหอบ (Dyspnea)',
+    tiredness: 'เหนื่อยล้า/อ่อนเพลีย',
+    drowsiness: 'ง่วงซึม',
+    nausea: 'คลื่นไส้/อาเจียน',
+    appetite: 'เบื่ออาหาร',
+    depression: 'ซึมเศร้า',
+    anxiety: 'วิตกกังวล',
+    wellbeing: 'สุขภาวะโดยรวม'
+  };
+
+  Object.keys(scores).forEach(k => {
+    const val = parseInt(scores[k]) || 0;
+    if (val >= 7) {
+      criticalItems.push(`- ${symptomLabels[k] || k}: *${val}/10*`);
+    }
+  });
+
+  const isCritical = criticalItems.length > 0;
+
+  // Build Telegram Notification
+  let alertMsg = '';
+  if (isCritical) {
+    alertMsg = `🚨 *[แจ้งเตือนด่วน: เคสวิกฤต]* 🚨\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `👤 *คนไข้:* ${patientName} (HN: \`${patientHN}\`)\n` +
+      `⏰ *รอบประเมิน:* ${round || '09:00'} (${dateStr})\n` +
+      `⚠️ *อาการวิกฤตที่ตรวจพบ (≥ 7):*\n${criticalItems.join('\n')}\n` +
+      `━━━━━━━━━━━━━━━━━━\n`;
+  } else {
+    alertMsg = `✅ *[บันทึกแบบประเมิน ESAS ใหม่]*\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `👤 *คนไข้:* ${patientName} (HN: \`${patientHN}\`)\n` +
+      `⏰ *รอบ:* ${round || '09:00'} | *วันที่:* ${dateStr}\n` +
+      `📊 *ระดับอาการ:* ปวด ${scores.pain || 0}, หายใจ ${scores.shortnessOfBreath || 0}, อ่อนเพลีย ${scores.tiredness || 0}, สุขภาวะ ${scores.wellbeing || 0}\n`;
+  }
+
+  // Add vital signs if available
+  if (vs.bp || vs.pulse || vs.spo2 || vs.temp) {
+    alertMsg += `🩺 *สัญญาณชีพ:* BP: ${vs.bp || '-'}, PR: ${vs.pulse || '-'} bpm, SpO2: ${vs.spo2 || '-'}%, Temp: ${vs.temp || '-'}°C\n`;
+  }
+
+  if (otherSymptoms) {
+    alertMsg += `➕ *อาการอื่น:* ${otherSymptoms}\n`;
+  }
+
+  if (notes) {
+    alertMsg += `📝 *บันทึกเพิ่มเติม:* "${notes}"\n`;
+  }
+
+  sendTelegramMessage(alertMsg);
   
   return jsonResponse({ message: 'Assessment submitted successfully' }, 201);
 }
@@ -467,8 +678,9 @@ function getAssessments(patientId, user) {
   
   for (let i = 1; i < data.length; i++) {
     if (sameId(data[i][1], patientId)) {
+      const row = data[i];
       const ass = {};
-      headers.forEach((h, idx) => { ass[h] = data[i][idx] || ''; });
+      headers.forEach((h, idx) => { ass[h] = row[idx] || ''; });
       
       // Reformat scores as object
       ass.scores = {
@@ -482,6 +694,16 @@ function getAssessments(patientId, user) {
         anxiety: parseInt(ass.anxiety) || 0,
         wellbeing: parseInt(ass.wellbeing) || 0
       };
+
+      // Reformat vital signs
+      ass.vitalSigns = {
+        bp: ass.bp || '',
+        pulse: ass.pulse || '',
+        temp: ass.temp || '',
+        spo2: ass.spo2 || '',
+        weight: ass.weight || ''
+      };
+
       results.push(ass);
     }
   }
@@ -500,8 +722,8 @@ function getLatestAssessment(patientHN) {
   let latestDate = '';
   
   for (let i = 1; i < data.length; i++) {
-    if (sameId(data[i][1], patientHN) && data[i][2] >= latestDate) {
-      latestDate = data[i][2];
+    if (sameId(data[i][1], patientHN) && String(data[i][2]) >= latestDate) {
+      latestDate = String(data[i][2]);
       latest = {};
       headers.forEach((h, idx) => { latest[h] = data[i][idx] || ''; });
       latest.scores = {
@@ -514,6 +736,13 @@ function getLatestAssessment(patientHN) {
         depression: parseInt(latest.depression) || 0,
         anxiety: parseInt(latest.anxiety) || 0,
         wellbeing: parseInt(latest.wellbeing) || 0
+      };
+      latest.vitalSigns = {
+        bp: latest.bp || '',
+        pulse: latest.pulse || '',
+        temp: latest.temp || '',
+        spo2: latest.spo2 || '',
+        weight: latest.weight || ''
       };
     }
   }
@@ -585,7 +814,7 @@ function getAISummary(patientId, user) {
     summaryText = `### 🤖 สรุปอาการทางคลินิกโดย AI (คุณยายสมศรี รักดี)
 
 **ภาพรวมผู้ป่วย:**
-- ผู้ป่วยหญิงอายุ 69 ปี วินิจฉัยเป็น **CA Lung ระยะที่ 4 ลุกลามกระดูก** (Active Home Care)
+- ผู้ป่วยหญิงอายุ 69 ปี วินิจฉัยเป็น **CA Lung ระยะที่ 4 ลุกลามกระดูก** (Active Home Ward)
 - ได้รับยา Fentanyl patch 25mcg/hr เพื่อคุมอาการปวดกระดูก
 
 **การวิเคราะห์ผลประเมินล่าสุด:**
@@ -616,6 +845,41 @@ function getAISummary(patientId, user) {
   return jsonResponse({ summary: summaryText });
 }
 
+// ==================== TELEGRAM NOTIFICATION ====================
+
+function sendTelegramMessage(text) {
+  const token = TELEGRAM_BOT_TOKEN || PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
+  const chatId = TELEGRAM_CHAT_ID || PropertiesService.getScriptProperties().getProperty('TELEGRAM_CHAT_ID');
+
+  if (!token || !chatId) {
+    Logger.log('Telegram Token or Chat ID not set. Message skipped.');
+    return false;
+  }
+
+  try {
+    const url = 'https://api.telegram.org/bot' + token + '/sendMessage';
+    const payload = {
+      chat_id: chatId,
+      text: text,
+      parse_mode: 'Markdown'
+    };
+
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const res = UrlFetchApp.fetch(url, options);
+    Logger.log('Telegram response: ' + res.getContentText());
+    return true;
+  } catch (err) {
+    Logger.log('Telegram error: ' + err.message);
+    return false;
+  }
+}
+
 // ==================== TTS PROXY ====================
 
 function ttsProxy(text) {
@@ -626,7 +890,7 @@ function ttsProxy(text) {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       muteHttpExceptions: true
     });
-    // Return binary MP3 directly — browser <audio> can play same-origin
+    // Return binary MP3 directly
     const blob = response.getBlob().setContentType('audio/mpeg');
     return blob;
   } catch (e) {
@@ -634,7 +898,6 @@ function ttsProxy(text) {
   }
 }
 
-// For google.script.run (returns plain string, not ContentService)
 function getTtsBase64(text) {
   if (!text) return 'Error: No text';
   try {
@@ -651,10 +914,6 @@ function getTtsBase64(text) {
 
 // ==================== HELPERS ====================
 
-/**
- * เปรียบเทียบ HN/patientId แบบ lenient
- * Google Sheets อาจเก็บ HN เป็น number (123456) แต่ query/body จาก frontend เป็น string ("123456")
- */
 function sameId(a, b) {
   return String(a) === String(b);
 }
@@ -687,7 +946,7 @@ function jsonResponse(data, code) {
 function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // Users sheet
+  // 1. Users sheet
   if (!ss.getSheetByName(SHEET_USERS)) {
     const sheet = ss.insertSheet(SHEET_USERS);
     sheet.appendRow(['id', 'username', 'password', 'role', 'name']);
@@ -695,32 +954,38 @@ function setupSheets() {
     sheet.appendRow(['u2', 'nurse1', 'nurse123', 'nurse', 'พย.สมหญิง']);
   }
   
-  // Patients sheet
+  // 2. Patients sheet
   if (!ss.getSheetByName(SHEET_PATIENTS)) {
     const sheet = ss.insertSheet(SHEET_PATIENTS);
     sheet.appendRow(['HN', 'name', 'disease', 'token', 'status', 'age', 'gender', 'relativePhone', 'caregiverName', 'address', 'responsibleStaff', 'clinicalNotes']);
-    sheet.appendRow(['123456', 'คุณยายสมศรี รักดี', 'CA Lung ระยะ 4', 'sample_token_abc123', 'ยังไม่ส่งลิงก์', 69, 'หญิง', '089-123-4567', 'ลูกสาวสมหญิง', 'กรุงเทพฯ', 'พย.วิกานดา', 'Fentanyl patch 25mcg/hr']);
-    sheet.appendRow(['998877', 'คุณลุงบุญมี ศรีสุข', 'CHF', 'sample_token_def456', 'ยังไม่ส่งลิงก์', 72, 'ชาย', '081-987-6543', 'ภรรยามาลี', 'ขอนแก่น', 'นพ.พีรพล', 'จำกัดน้ำดื่ม จดบันทึกน้ำหนัก']);
+    sheet.appendRow(['123456', 'คุณยายสมศรี รักดี', 'CA Lung ระยะ 4', 'sample_token_abc123', 'ยังไม่ส่งลิงก์', 69, 'หญิง', '089-123-4567', 'ลูกสาวสมหญิง', 'ต.เมืองพล อ.พล จ.ขอนแก่น', 'พย.วิกานดา', 'Fentanyl patch 25mcg/hr']);
+    sheet.appendRow(['998877', 'คุณลุงบุญมี ศรีสุข', 'CHF', 'sample_token_def456', 'ยังไม่ส่งลิงก์', 72, 'ชาย', '081-987-6543', 'ภรรยามาลี', 'อ.พล จ.ขอนแก่น', 'นพ.พีรพล', 'จำกัดน้ำดื่ม จดบันทึกน้ำหนัก']);
   }
   
-  // Assessments sheet
-  if (!ss.getSheetByName(SHEET_ASSESSMENTS)) {
-    const sheet = ss.insertSheet(SHEET_ASSESSMENTS);
-    sheet.appendRow(['id', 'patientId', 'date', 'round', 'pain', 'shortnessOfBreath', 'tiredness', 'drowsiness', 'nausea', 'appetite', 'depression', 'anxiety', 'wellbeing', 'notes']);
+  // 3. Assessments sheet (with Vital Signs & Other Symptoms)
+  let assessSheet = ss.getSheetByName(SHEET_ASSESSMENTS);
+  if (!assessSheet) {
+    assessSheet = ss.insertSheet(SHEET_ASSESSMENTS);
+    assessSheet.appendRow([
+      'id', 'patientId', 'date', 'round', 
+      'pain', 'shortnessOfBreath', 'tiredness', 'drowsiness', 'nausea', 
+      'appetite', 'depression', 'anxiety', 'wellbeing', 
+      'bp', 'pulse', 'temp', 'spo2', 'weight', 'otherSymptoms', 'notes'
+    ]);
   }
   
-  // Event Logs sheet
+  // 4. Event Logs sheet
   if (!ss.getSheetByName(SHEET_EVENT_LOGS)) {
     const sheet = ss.insertSheet(SHEET_EVENT_LOGS);
     sheet.appendRow(['id', 'patientId', 'category', 'title', 'date', 'time', 'content', 'recordedBy']);
   }
   
-  SpreadsheetApp.getUi().alert('✅ ตั้งค่า Sheets เรียบร้อย! พร้อมใช้งาน');
+  SpreadsheetApp.getUi().alert('✅ ตั้งค่า Sheets เรียบร้อย! ระบบ Palliative Care รพ.พล พร้อมใช้งาน');
 }
 
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('Palliative Care')
-    .addItem('⚙️ ตั้งค่า Sheets', 'setupSheets')
+    .createMenu('🏥 Palliative Care')
+    .addItem('⚙️ ตั้งค่า Sheets และคอลัมน์', 'setupSheets')
     .addToUi();
 }

@@ -34,3 +34,5 @@ apps-script/.claspignore
 # Environment
 .env
 .env.*
+.vercel
+.env*
