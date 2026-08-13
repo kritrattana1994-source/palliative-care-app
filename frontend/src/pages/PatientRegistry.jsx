@@ -5,7 +5,7 @@ import {
   Download, ChevronDown, RefreshCw, ClipboardList, Stethoscope
 } from 'lucide-react';
 import { db, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from '../services/firebase';
-import { v4 as uuidv4 } from 'uuid'; // Need to install uuid if not already, or use simple math random for tokens
+
 // Generate a short 6-character alphanumeric token
 const generateToken = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
