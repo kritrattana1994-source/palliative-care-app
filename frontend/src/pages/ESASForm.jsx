@@ -269,22 +269,43 @@ export default function ESASForm() {
     }
     const updateVoice = () => {
       const voices = window.speechSynthesis.getVoices();
-      // Try to find a female Thai voice first (Premwadee for Windows, Kanya/Siri for Apple, Google for Chrome/Android)
+      if (voices.length === 0) return; // Wait for onvoiceschanged to fire
+
+      // Try to find a female Thai voice first
       let voice = voices.find(v => 
         (v.lang === 'th-TH' || v.lang.startsWith('th')) && 
         (v.name.includes('Premwadee') || v.name.includes('Siri') || v.name.includes('Kanya') || v.name.includes('Google') || v.name.toLowerCase().includes('female'))
       );
       
+      // If no specific female voice found, fallback to ANY Thai voice
+      if (!voice) {
+        voice = voices.find(v => v.lang === 'th-TH' || v.lang.startsWith('th'));
+      }
+      
       if (voice) {
         thaiVoiceRef.current = voice;
         setTtsEngine('native');
       } else {
-        // Force fallback to Google Translate TTS to guarantee a female voice
         setTtsEngine('google');
       }
     };
+    
+    // Attempt immediately in case voices are already loaded
     updateVoice();
-    window.speechSynthesis.onvoiceschanged = updateVoice;
+    
+    // Also set a fallback timeout in case onvoiceschanged never fires (some Android browsers)
+    const timeout = setTimeout(() => {
+      if (window.speechSynthesis.getVoices().length === 0) {
+        setTtsEngine('google');
+      } else {
+        updateVoice();
+      }
+    }, 1000);
+
+    window.speechSynthesis.onvoiceschanged = () => {
+      clearTimeout(timeout);
+      updateVoice();
+    };
   }, []);
 
   useEffect(() => () => { 
