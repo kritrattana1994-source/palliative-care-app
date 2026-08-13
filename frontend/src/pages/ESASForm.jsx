@@ -232,21 +232,19 @@ export default function ESASForm() {
     }
     const updateVoice = () => {
       const voices = window.speechSynthesis.getVoices();
-      // Try to find a female Thai voice first (Premwadee for Windows, Kanya/Siri for Apple)
+      // Try to find a female Thai voice first (Premwadee for Windows, Kanya/Siri for Apple, Google for Chrome/Android)
       let voice = voices.find(v => 
         (v.lang === 'th-TH' || v.lang.startsWith('th')) && 
-        (v.name.includes('Premwadee') || v.name.includes('Siri') || v.name.includes('Kanya') || v.name.toLowerCase().includes('female'))
+        (v.name.includes('Premwadee') || v.name.includes('Siri') || v.name.includes('Kanya') || v.name.includes('Google') || v.name.toLowerCase().includes('female'))
       );
-      // Fallback to any Thai voice
-      if (!voice) {
-        voice = voices.find(v => 
-          v.lang === 'th-TH' || 
-          v.lang.startsWith('th') || 
-          v.name.includes('Thai') || 
-          v.name.includes('ภาษาไทย')
-        );
+      
+      if (voice) {
+        thaiVoiceRef.current = voice;
+        setTtsEngine('native');
+      } else {
+        // Force fallback to Google Translate TTS to guarantee a female voice
+        setTtsEngine('google');
       }
-      if (voice) thaiVoiceRef.current = voice;
     };
     updateVoice();
     window.speechSynthesis.onvoiceschanged = updateVoice;
