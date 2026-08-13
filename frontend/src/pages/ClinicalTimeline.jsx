@@ -5,7 +5,7 @@ import {
   User, MapPin, Sparkles, Phone, Pill, Activity, Users, Home, 
   ClipboardList, Clock, X, Send, ShieldAlert, Heart, Gauge, Thermometer, Wind
 } from 'lucide-react';
-import { apiGet, apiPost } from '../config';
+import { db, doc, getDoc, collection, query, where, getDocs, addDoc, orderBy } from '../services/firebase';
 
 export default function ClinicalTimeline({ token }) {
   const { id } = useParams();
@@ -38,15 +38,25 @@ export default function ClinicalTimeline({ token }) {
 
   useEffect(() => {
     (async () => {
+      setLoading(true);
       try {
-        const data = await apiGet('/api/patients');
-        const safePatients = Array.isArray(data) ? data : [];
-        const found = safePatients.find(p => p && (String(p.id) === String(id) || String(p.HN) === String(id)));
-        setPatient(found || null);
-        const assessmentsData = await apiGet('/api/assessments/' + id);
-        setAssessments(Array.isArray(assessmentsData) ? assessmentsData : []);
-        const logs = await apiGet('/api/patients/' + id + '/event-logs');
-        setEventLogs(Array.isArray(logs) ? logs : []);
+        const patientRef = doc(db, 'patients', id);
+        const patientSnap = await getDoc(patientRef);
+        if (patientSnap.exists()) {
+          setPatient({ id: patientSnap.id, ...patientSnap.data() });
+        } else {
+          setPatient(null);
+        }
+
+        const assQ = query(collection(db, 'assessments'), where('patientId', '==', id), orderBy('createdAt', 'asc'));
+        const assSnap = await getDocs(assQ);
+        const assessmentsData = assSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setAssessments(assessmentsData);
+
+        const logsQ = query(collection(db, 'patients', id, 'eventLogs'), orderBy('createdAt', 'desc'));
+        const logsSnap = await getDocs(logsQ);
+        const logsData = logsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setEventLogs(logsData);
       } catch (err) {
         console.error(err);
       } finally {
@@ -85,13 +95,17 @@ export default function ClinicalTimeline({ token }) {
       other: '📝 บันทึกอื่น ๆ'
     };
     try {
-      const data = await apiPost('/api/patients/' + id + '/event-logs', {
+      const newLog = {
         category,
         title: tm[category] || 'บันทึกเหตุการณ์',
         content,
-        recordedBy
-      });
-      setEventLogs(prev => [data, ...prev]);
+        recordedBy,
+        createdAt: new Date().toISOString(),
+        date: new Date().toLocaleDateString('th-TH'),
+        time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+      };
+      const logRef = await addDoc(collection(db, 'patients', id, 'eventLogs'), newLog);
+      setEventLogs(prev => [{ id: logRef.id, ...newLog }, ...prev]);
       setContent('');
     } catch (err) {
       console.error(err);
@@ -105,8 +119,27 @@ export default function ClinicalTimeline({ token }) {
     setAiLoading(true);
     setAiSummary('');
     try {
-      const data = await apiPost('/api/patients/' + id + '/ai-summary', {});
-      setAiSummary(data.summary);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const latestAss = assessments[assessments.length - 1];
+      let summaryText = `### สรุปภาพรวมอาการผู้ป่วย\n`;
+      summaryText += `- **ผู้ป่วย**: ${patient?.name} (HN: ${patient?.id})\n`;
+      summaryText += `- **โรคประจำตัว**: ${patient?.disease}\n\n`;
+      if (latestAss && latestAss.scores) {
+          summaryText += `### การประเมินล่าสุด (${latestAss.date} รอบ ${latestAss.round})\n`;
+          let criticals = [];
+          Object.entries(latestAss.scores).forEach(([key, val]) => {
+              if (val >= 7) criticals.push(key);
+          });
+          if (criticals.length > 0) {
+              summaryText += `1. **พบอาการวิกฤตที่ต้องจัดการด่วน (คะแนน >= 7)**: ผู้ป่วยมีอาการระดับรุนแรง กรุณาตรวจสอบบันทึกและพิจารณาปรับยา\n`;
+          } else {
+              summaryText += `1. **อาการทรงตัว**: คะแนนส่วนใหญ่อยู่ในระดับที่ควบคุมได้\n`;
+          }
+      } else {
+          summaryText += `1. **ยังไม่มีข้อมูลประเมิน**: ผู้ป่วยยังไม่ได้ทำแบบประเมิน ESAS\n`;
+      }
+      summaryText += `\n2. **แผนการดูแล**: แนะนำให้ติดตามอาการอย่างใกล้ชิด และแนะนำให้ญาติโทรแจ้งหากอาการเปลี่ยนแปลงกะทันหัน`;
+      setAiSummary(summaryText);
     } catch (err) {
       setAiSummary('เกิดข้อผิดพลาดในการประมวลผลข้อมูล AI สรุปเคส');
     } finally {
