@@ -57,6 +57,11 @@ export default function Sidebar({ user, onLogout }) {
           <span>ทะเบียนผู้ป่วย</span>
         </NavLink>
 
+        <NavLink to="/equipments" className={navLinkClass}>
+          <ClipboardList className="w-5 h-5 shrink-0" />
+          <span>ระบบยืม-คืนเครื่องมือ</span>
+        </NavLink>
+
         {/* Admin-only section */}
         {isAdmin && (
           <>
