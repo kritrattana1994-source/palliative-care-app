@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, BarChart2, CheckCircle, Package, ArrowRightLeft, Download } from 'lucide-react';
+import { Search, Plus, BarChart2, CheckCircle, Package, ArrowRightLeft, Download, Printer } from 'lucide-react';
 import { db, collection, onSnapshot, query, orderBy, setDoc, doc, addDoc } from '../services/firebase';
 import { seedData } from '../seedData';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
@@ -312,11 +312,12 @@ export default function EquipmentDashboard({ token }) {
                   <th className="px-6 py-4">วอร์ด</th>
                   <th className="px-6 py-4 text-center">สถานะ</th>
                   <th className="px-6 py-4">รายการค้าง</th>
+                  <th className="px-6 py-4 text-center">ตัวเลือก</th>
                 </tr>
               </thead>
               <tbody className="text-sm divide-y divide-slate-50">
                   {filteredRecords.length === 0 ? (
-                      <tr><td colSpan="5" className="p-10 text-center text-slate-300 italic font-medium">ไม่พบข้อมูลใบงาน</td></tr>
+                      <tr><td colSpan="6" className="p-10 text-center text-slate-300 italic font-medium">ไม่พบข้อมูลใบงาน</td></tr>
                   ) : (
                       filteredRecords.map(ref => {
                           const isDeath = patients[ref.patientId]?.status === 'เสียชีวิต';
@@ -343,6 +344,11 @@ export default function EquipmentDashboard({ token }) {
                                   ) : (
                                       <span className="text-xs text-slate-400">-</span>
                                   )}
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                  <button onClick={() => navigate(`/equipments/print/${ref.refId}`)} className="text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 hover:bg-blue-50 p-2 rounded-lg" title="พิมพ์ใบงาน">
+                                      <Printer className="w-4 h-4" />
+                                  </button>
                               </td>
                           </tr>
                       )})
