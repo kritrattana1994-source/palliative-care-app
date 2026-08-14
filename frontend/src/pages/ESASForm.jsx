@@ -417,9 +417,8 @@ export default function ESASForm() {
     try {
       const selfCareGuides = {};
       Object.entries(scores).forEach(([key, score]) => {
-          if (assessmentConfig && assessmentConfig[key] && assessmentConfig[key][score] && assessmentConfig[key][score].selfCareGuide) {
-              selfCareGuides[key] = assessmentConfig[key][score].selfCareGuide;
-          }
+          const defaultGuide = score >= 7 ? 'แนะนำให้ติดต่อพยาบาลด่วนเพื่อรับคำแนะนำเพิ่มเติม' : 'พักผ่อนให้เพียงพอและสังเกตอาการ';
+          selfCareGuides[key] = assessmentConfig?.[key]?.[score]?.selfCareGuide || defaultGuide;
       });
 
       const assessmentData = {
@@ -560,7 +559,8 @@ export default function ESASForm() {
                   badgeClass = 'bg-amber-50 border-amber-200 text-amber-900';
                   scoreBadge = 'bg-amber-200 text-amber-900 border-amber-300';
                 }
-                const guide = assessmentConfig?.[s.key]?.[val]?.selfCareGuide;
+                const defaultGuide = val >= 7 ? 'แนะนำให้ติดต่อพยาบาลด่วนเพื่อรับคำแนะนำเพิ่มเติม' : 'พักผ่อนให้เพียงพอและสังเกตอาการ';
+                const guide = assessmentConfig?.[s.key]?.[val]?.selfCareGuide || defaultGuide;
 
                 return (
                   <div key={s.key} className={`p-4 rounded-2xl border text-left shadow-sm ${badgeClass}`}>
