@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   Activity, AlertCircle, CheckCircle, ChevronRight, ChevronLeft, 
@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { apiPublicGet, apiPublicPost, getTtsUrl } from '../config';
 import { db, collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, getDoc } from '../services/firebase';
+import { notifyAssessmentSubmitted } from '../services/telegramNotify';
 import html2canvas from 'html2canvas';
 
 const THAI_NUMBER_WORDS = [
@@ -471,9 +472,22 @@ export default function ESASForm() {
       
       await addDoc(collection(db, 'assessments'), assessmentData);
       
+      // Determine if any score is critical (>=7)
+      const isCritical = Object.values(scores).some(s => s >= 7);
+      assessmentData.isCritical = isCritical;
+      assessmentData.patientName = patient.name;
+
       await updateDoc(doc(db, 'patients', patient.id), {
           status: 'ประเมินแล้ว',
           latestAssessment: assessmentData
+      });
+
+      // Send Telegram notification (non-blocking)
+      notifyAssessmentSubmitted({
+        patientName: patient.name,
+        patientId: patient.id,
+        scores,
+        isCritical,
       });
 
       if (autoPlayVoice) speakText('ส่งแบบประเมินเรียบร้อย ขอบคุณค่ะ แคปเจอร์หน้าจอนี้เก็บไว้เพื่อดูคำแนะนำการดูแลตนเองนะคะ');
