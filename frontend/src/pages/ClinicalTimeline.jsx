@@ -576,8 +576,8 @@ export default function ClinicalTimeline({ token, user }) {
                   <span>คลิกหัวข้ออาการด้านล่างเพื่อแสดงกราฟ</span>
                 </div>
               ) : (
-                <div className="w-full overflow-x-auto">
-                  <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ minWidth: 400 }}>
+                <div className="w-full overflow-hidden" style={{ height: 280 }}>
+                  <svg viewBox={`0 0 ${width} ${height}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
                     {/* Grid */}
                     {[0, 2, 4, 6, 8, 10].map(val => {
                       const y = padding + (1 - val / 10) * (height - padding * 2);
