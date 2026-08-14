@@ -4,8 +4,8 @@
  * Bot Token and Chat ID are stored as Vercel environment variables (not in git)
  */
 
-const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
-const CHAT_ID   = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+const BOT_TOKEN = "8805694470:AAEPuBRl6m1jiK7VoWjJ8WccmDrhjn78PTU";
+const CHAT_ID   = "-5398496798";
 
 /**
  * Send a Telegram message to the configured group/channel

@@ -597,7 +597,7 @@ export default function ESASForm() {
                 <p className="text-xl text-slate-600 mt-2 font-medium">ชื่อผู้ป่วย: <span className="font-black text-emerald-800 text-2xl">{patient?.name}</span> (HN: {patient?.id})</p>
               </div>
               <div className="text-right">
-                 <p className="text-lg text-slate-700 font-bold">วันที่ประเมิน: {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                 <p className="text-lg text-slate-700 font-bold">วันที่และเวลาประเมิน: {new Date().toLocaleString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                  <p className="text-base text-slate-500 font-bold mt-1">โรงพยาบาลพล • ศูนย์การดูแลแบบประคับประคอง</p>
               </div>
             </div>
