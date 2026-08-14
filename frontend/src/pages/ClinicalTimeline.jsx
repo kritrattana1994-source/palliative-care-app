@@ -81,7 +81,17 @@ export default function ClinicalTimeline({ token }) {
       const x = padding + (i / (assessments.length > 1 ? assessments.length - 1 : 1)) * cw;
       const val = (a.scores && a.scores[selectedSymptom]) || 0;
       const y = padding + (1 - val / 10) * ch;
-      return { x, y, val, date: a.date, round: a.round };
+      
+      let daysPassed = 0;
+      if (i > 0) {
+        const prevTime = assessments[i-1].createdAt?.toMillis ? assessments[i-1].createdAt.toMillis() : new Date(assessments[i-1].createdAt || assessments[i-1].date).getTime();
+        const currTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || a.date).getTime();
+        if (currTime && prevTime) {
+          daysPassed = Math.floor(Math.max(0, currTime - prevTime) / (1000 * 60 * 60 * 24));
+        }
+      }
+      
+      return { x, y, val, date: a.date, daysPassed };
     });
     let d = `M ${points[0].x} ${points[0].y}`;
     for (let i = 1; i < points.length; i++) d += ` L ${points[i].x} ${points[i].y}`;
@@ -578,6 +588,18 @@ export default function ClinicalTimeline({ token }) {
                         <g key={idx}>
                           <circle cx={pt.x} cy={pt.y} r="6" fill={activeSymptom?.stroke || '#059669'} stroke="#fff" strokeWidth="2.5" />
                           <title>{`${pt.date}: คะแนน ${pt.val}/10`}</title>
+                          
+                          {/* Date Label */}
+                          <text x={pt.x} y={height - padding + 18} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#64748b">
+                            {pt.date.split('/')[0] + '/' + pt.date.split('/')[1]}
+                          </text>
+                          
+                          {/* Days passed label */}
+                          {pt.daysPassed >= 0 && idx > 0 && (
+                            <text x={pt.x} y={height - padding + 32} textAnchor="middle" fontSize="9" fill="#94a3b8">
+                              +{pt.daysPassed} วัน
+                            </text>
+                          )}
                         </g>
                       ))}
                     </svg>
