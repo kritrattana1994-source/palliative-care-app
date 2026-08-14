@@ -11,7 +11,7 @@
 html {
   scroll-behavior: smooth;
   font-family: 'Sarabun', system-ui, -apple-system, sans-serif;
-  zoom: 0.9;
+  font-size: 90%;
 }
 
 body {
