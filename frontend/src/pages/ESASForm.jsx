@@ -547,44 +547,38 @@ export default function ESASForm() {
               </p>
             </div>
 
-            {/* Score Summary Grid */}
-            <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 sm:p-4 rounded-2xl border border-slate-200">
+            {/* Score Summary and Self-Care */}
+            <div className="space-y-3">
               {symptomsMeta.map(s => {
                 const val = scores[s.key];
-                let badge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-                if (val >= 7) badge = 'bg-red-100 text-red-800 border-red-300 font-black';
-                else if (val >= 4) badge = 'bg-amber-100 text-amber-800 border-amber-300 font-black';
+                let badgeClass = 'bg-emerald-50 border-emerald-200 text-emerald-900';
+                let scoreBadge = 'bg-emerald-200 text-emerald-900 border-emerald-300';
+                if (val >= 7) {
+                  badgeClass = 'bg-red-50 border-red-200 text-red-900';
+                  scoreBadge = 'bg-red-200 text-red-900 border-red-300';
+                } else if (val >= 4) {
+                  badgeClass = 'bg-amber-50 border-amber-200 text-amber-900';
+                  scoreBadge = 'bg-amber-200 text-amber-900 border-amber-300';
+                }
+                const guide = assessmentConfig?.[s.key]?.[val]?.selfCareGuide;
+
                 return (
-                  <div key={s.key} className="bg-white p-2 rounded-xl border border-slate-200 text-center shadow-xs">
-                    <div className="text-[10px] sm:text-[11px] font-bold text-slate-600 truncate">{s.title}</div>
-                    <div className={`text-sm sm:text-base font-black px-2 py-0.5 rounded-lg border mt-1 inline-block ${badge}`}>
-                      {val}
+                  <div key={s.key} className={`p-4 rounded-2xl border text-left shadow-sm ${badgeClass}`}>
+                    <div className="flex justify-between items-center">
+                       <span className="font-bold text-sm sm:text-base">{s.title}</span>
+                       <span className={`font-black px-3 py-1 rounded-lg border text-sm shadow-sm ${scoreBadge}`}>
+                          คะแนน: {val} / 10
+                       </span>
                     </div>
+                    {guide && (
+                      <div className="text-xs sm:text-sm pt-3 mt-3 border-t border-black/5 flex items-start gap-2 font-medium">
+                        <HeartPulse className="w-4 h-4 shrink-0 mt-0.5 opacity-70" />
+                        <span>{guide}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
-            </div>
-
-            {/* Self-Care Guidelines */}
-            <div className="text-left space-y-2">
-              <h4 className="text-sm font-black text-slate-800 flex items-center gap-1.5 border-b pb-1">
-                <HeartPulse className="w-4 h-4 text-emerald-500" />
-                แนวทางการดูแลตนเอง
-              </h4>
-              <ul className="space-y-1.5">
-                {Object.entries(scores)
-                  .filter(([key, score]) => assessmentConfig && assessmentConfig[key] && assessmentConfig[key][score] && assessmentConfig[key][score].selfCareGuide)
-                  .map(([key, score]) => (
-                    <li key={key} className="text-xs sm:text-sm text-slate-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-100">
-                      <strong>{symptomsMeta.find(s => s.key === key)?.title}:</strong> {assessmentConfig[key][score].selfCareGuide}
-                    </li>
-                  ))}
-                  {Object.entries(scores).filter(([key, score]) => assessmentConfig && assessmentConfig[key] && assessmentConfig[key][score] && assessmentConfig[key][score].selfCareGuide).length === 0 && (
-                    <li className="text-xs sm:text-sm text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                      พักผ่อนให้เพียงพอและทำจิตใจให้สบาย
-                    </li>
-                  )}
-              </ul>
             </div>
 
             {isAnyCritical && (
