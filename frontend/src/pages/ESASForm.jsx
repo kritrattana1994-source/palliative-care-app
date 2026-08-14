@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   Activity, AlertCircle, CheckCircle, ChevronRight, ChevronLeft, 
@@ -81,16 +81,16 @@ export default function ESASForm() {
       short: 'ปวด',
       label: '1. อาการปวด (Pain)', 
       desc: '0 = ไม่ปวดเลย, 10 = ปวดรุนแรงที่สุดเท่าที่จะเป็นไปได้', 
-      voiceLabel: 'ข้อที่หนึ่ง อาการปวด ศูนย์คือไม่มีอาการปวดเลย สิบคือปวดรุนแรงที่สุดเท่าที่จะเป็นไปได้ค่ะ',
+      voiceLabel: 'ข้อที่หนึ่ง... อาการปวด... ศูนย์คือไม่มีอาการปวดเลย... สิบคือปวดรุนแรงที่สุดค่ะ',
       speechMap: (score, numWord) => {
         if (assessmentConfig && assessmentConfig['pain'] && assessmentConfig['pain'][score]) {
            return assessmentConfig['pain'][score].speechMessage;
         }
-        if (score === 0) return 'อาการปวด ศูนย์คะแนน ไม่มีอาการปวดเลย สบายดีเป็นปกติค่ะ';
+        if (score === 0) return 'ไม่มีอาการปวดเลย สบายดีนะคะ';
         if (score <= 3) return `อาการปวด เลือกระดับ ${numWord} คะแนน ปวดเล็กน้อย ยังทนไหวค่ะ`;
         if (score <= 6) return `อาการปวด เลือกระดับ ${numWord} คะแนน ปวดปานกลาง เริ่มรบกวนการใช้ชีวิตค่ะ`;
         if (score <= 8) return `อาการปวด เลือกระดับ ${numWord} คะแนน ปวดรุนแรง ควรรีบพักหรือแจ้งพยาบาลค่ะ`;
-        return `อาการปวด เลือกระดับ ${numWord} คะแนน ปวดรุนแรงที่สุด หรือมีภาวะวิกฤตค่ะ`;
+        return `ปวดรุนแรงที่สุด เลือกระดับ ${numWord}... พยาบาลจะรีบดูแลให้นะคะ`;
       }
     },
     { 
@@ -99,7 +99,7 @@ export default function ESASForm() {
       short: 'หอบ',
       label: '2. หายใจเหนื่อยหอบ (Dyspnea)', 
       desc: '0 = หายใจสะดวกดี, 10 = หายใจลำบาก เหนื่อยหอบรุนแรงที่สุด', 
-      voiceLabel: 'ข้อที่สอง อาการหายใจเหนื่อยหอบ ศูนย์คือหายใจสะดวกดีปกติ สิบคือหายใจลำบากและเหนื่อยหอบรุนแรงที่สุดค่ะ',
+      voiceLabel: 'ข้อที่สอง... อาการหายใจเหนื่อยหอบ... ศูนย์คือหายใจสะดวกดีปกติ... สิบคือหายใจลำบากรุนแรงที่สุดค่ะ',
       speechMap: (score, numWord) => {
         if (assessmentConfig && assessmentConfig['shortnessOfBreath'] && assessmentConfig['shortnessOfBreath'][score]) {
            return assessmentConfig['shortnessOfBreath'][score].speechMessage;
@@ -117,7 +117,7 @@ export default function ESASForm() {
       short: 'เพลีย',
       label: '3. ความเหนื่อยล้า / อ่อนเพลีย (Tiredness)', 
       desc: '0 = กระฉับกระเฉงดี, 10 = อ่อนเพลียรุนแรงจนขยับตัวไม่ไหว', 
-      voiceLabel: 'ข้อที่สาม ความเหนื่อยล้าหรืออ่อนเพลีย ศูนย์คือกระฉับกระเฉงดี สิบคืออ่อนเพลียรุนแรงจนขยับตัวไม่ไหวค่ะ',
+      voiceLabel: 'ข้อที่สาม... ความเหนื่อยล้าหรืออ่อนเพลีย... ศูนย์คือกระฉับกระเฉงดี... สิบคืออ่อนเพลียรุนแรงจนขยับตัวไม่ไหวค่ะ',
       speechMap: (score, numWord) => {
         if (assessmentConfig && assessmentConfig['tiredness'] && assessmentConfig['tiredness'][score]) {
            return assessmentConfig['tiredness'][score].speechMessage;
@@ -135,7 +135,7 @@ export default function ESASForm() {
       short: 'ซึม',
       label: '4. ความง่วงซึม (Drowsiness)', 
       desc: '0 = ตื่นตัวดี, 10 = ง่วงซึมตลอดเวลา ปลุกตื่นยาก', 
-      voiceLabel: 'ข้อที่สี่ ความง่วงซึม ศูนย์คือตื่นตัวดีปกติ สิบคือง่วงซึมตลอดเวลาปลุกตื่นยากค่ะ',
+      voiceLabel: 'ข้อที่สี่... ความง่วงซึม... ศูนย์คือตื่นตัวดีปกติ... สิบคือง่วงซึมตลอดเวลา ปลุกตื่นยากมากค่ะ',
       speechMap: (score, numWord) => {
         if (assessmentConfig && assessmentConfig['drowsiness'] && assessmentConfig['drowsiness'][score]) {
            return assessmentConfig['drowsiness'][score].speechMessage;
@@ -153,7 +153,7 @@ export default function ESASForm() {
       short: 'คลื่นไส้',
       label: '5. อาการคลื่นไส้ (Nausea)', 
       desc: '0 = ไม่รู้สึกคลื่นไส้เลย, 10 = คลื่นไส้และอาเจียนรุนแรงตลอด', 
-      voiceLabel: 'ข้อที่ห้า อาการคลื่นไส้ ศูนย์คือไม่รู้สึกคลื่นไส้เลย สิบคือคลื่นไส้และอาเจียนรุนแรงตลอดเวลาค่ะ',
+      voiceLabel: 'ข้อที่ห้า... อาการคลื่นไส้... ศูนย์คือไม่รู้สึกคลื่นไส้เลย... สิบคือคลื่นไส้และอาเจียนรุนแรงตลอดเวลาค่ะ',
       speechMap: (score, numWord) => {
         if (assessmentConfig && assessmentConfig['nausea'] && assessmentConfig['nausea'][score]) {
            return assessmentConfig['nausea'][score].speechMessage;
@@ -171,7 +171,7 @@ export default function ESASForm() {
       short: 'เบื่ออาหาร',
       label: '6. ความอยากอาหาร (Lack of Appetite)', 
       desc: '0 = ทานได้ปกติ, 10 = เบื่ออาหารอย่างรุนแรง ทานไม่ได้เลย', 
-      voiceLabel: 'ข้อที่หก ความอยากอาหาร ศูนย์คืออยากอาหารปกติรับประทานได้ดี สิบคือเบื่ออาหารอย่างรุนแรงและรับประทานไม่ได้เลยค่ะ',
+      voiceLabel: 'ข้อที่หก... ความอยากอาหาร... ศูนย์คืออยากอาหารรับประทานได้ดีปกติ... สิบคือเบื่ออาหารรุนแรง รับประทานไม่ได้เลยค่ะ',
       speechMap: (score, numWord) => {
         if (assessmentConfig && assessmentConfig['appetite'] && assessmentConfig['appetite'][score]) {
            return assessmentConfig['appetite'][score].speechMessage;
@@ -189,7 +189,7 @@ export default function ESASForm() {
       short: 'ซึมเศร้า',
       label: '7. ความรู้สึกซึมเศร้า (Depression)', 
       desc: '0 = อารมณ์ดี มีกำลังใจ, 10 = ซึมเศร้า ท้อแท้หดหู่รุนแรงที่สุด', 
-      voiceLabel: 'ข้อที่เจ็ด ความรู้สึกซึมเศร้า ศูนย์คืออารมณ์ดีปกติมีกำลังใจดี สิบคือซึมเศร้าหรือท้อแท้หดหู่รุนแรงที่สุดค่ะ',
+      voiceLabel: 'ข้อที่เจ็ด... ความรู้สึกซึมเศร้า... ศูนย์คืออารมณ์ดีมีกำลังใจ... สิบคือซึมเศร้าท้อแท้รุนแรงที่สุดค่ะ',
       speechMap: (score, numWord) => {
         if (assessmentConfig && assessmentConfig['depression'] && assessmentConfig['depression'][score]) {
            return assessmentConfig['depression'][score].speechMessage;
@@ -207,7 +207,7 @@ export default function ESASForm() {
       short: 'กังวล',
       label: '8. ความวิตกกังวล (Anxiety)', 
       desc: '0 = สงบ ปลอดภัยดี, 10 = วิตกกังวล กลัว กระสับกระส่ายรุนแรง', 
-      voiceLabel: 'ข้อที่แปด ความวิตกกังวล ศูนย์คือรู้สึกสงบปลอดภัยดีปกติ สิบคือกังวลกลัวกระสับกระส่ายรุนแรงที่สุดค่ะ',
+      voiceLabel: 'ข้อที่แปด... ความวิตกกังวล... ศูนย์คือรู้สึกสงบปลอดภัยดี... สิบคือวิตกกังวล กลัว กระสับกระส่ายรุนแรงที่สุดค่ะ',
       speechMap: (score, numWord) => {
         if (assessmentConfig && assessmentConfig['anxiety'] && assessmentConfig['anxiety'][score]) {
            return assessmentConfig['anxiety'][score].speechMessage;
@@ -225,7 +225,7 @@ export default function ESASForm() {
       short: 'สุขภาวะ',
       label: '9. สุขภาวะโดยรวม (Overall Wellbeing)', 
       desc: '0 = สบายตัวสบายใจดีมาก, 10 = รู้สึกไม่สบายตัวแย่ที่สุด', 
-      voiceLabel: 'ข้อที่เก้า ความรู้สึกสบายหรือสุขภาวะโดยรวม ศูนย์คือรู้สึกสบายตัวสบายใจดีมาก สิบคือไม่สบายตัวอย่างรุนแรงที่สุดค่ะ',
+      voiceLabel: 'ข้อที่เก้า... สุขภาวะโดยรวม... ศูนย์คือรู้สึกสบายตัวสบายใจดีมาก... สิบคือไม่สบายตัวอย่างรุนแรงที่สุดค่ะ',
       speechMap: (score, numWord) => {
         if (assessmentConfig && assessmentConfig['wellbeing'] && assessmentConfig['wellbeing'][score]) {
            return assessmentConfig['wellbeing'][score].speechMessage;
