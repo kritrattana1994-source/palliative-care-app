@@ -83,6 +83,10 @@ export default function Sidebar({ user, onLogout }) {
               <ClipboardList className="w-5 h-5 shrink-0" />
               <span>จัดการข้อความประเมิน</span>
             </NavLink>
+            <NavLink to="/equipment-config" className={navLinkClass}>
+              <Package className="w-5 h-5 shrink-0" />
+              <span>ฐานข้อมูลเครื่องมือแพทย์</span>
+            </NavLink>
           </>
         )}
       </nav>
