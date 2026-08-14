@@ -16,7 +16,19 @@ export default function ClinicalTimeline({ token, user }) {
   const [eventLogs, setEventLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('notes');
-  const [selectedSymptom, setSelectedSymptom] = useState('pain');
+  // Multi-select symptom overlay
+  const [selectedSymptoms, setSelectedSymptoms] = useState(new Set(['pain']));
+  const toggleSymptom = (key) => {
+    setSelectedSymptoms(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        if (next.size > 1) next.delete(key); // keep at least 1
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
   const [category, setCategory] = useState('call');
   const [content, setContent] = useState('');
   const [recordedBy, setRecordedBy] = useState('พย.วิกานดา');
@@ -77,33 +89,32 @@ export default function ClinicalTimeline({ token, user }) {
     })();
   }, [id, token]);
 
-  const activeSymptom = symptomsList.find(s => s.key === selectedSymptom);
+  const activeSymptoms = symptomsList.filter(s => selectedSymptoms.has(s.key));
   const width = 600, height = 250, padding = 40;
 
-  const getSvgElements = () => {
+  // Build per-symptom SVG path data
+  const getSymptomSvgData = (symptomKey) => {
     if (assessments.length === 0) return null;
     const cw = width - padding * 2, ch = height - padding * 2;
     const points = assessments.map((a, i) => {
       const x = padding + (i / (assessments.length > 1 ? assessments.length - 1 : 1)) * cw;
-      const val = (a.scores && a.scores[selectedSymptom]) || 0;
+      const val = (a.scores && a.scores[symptomKey]) || 0;
       const y = padding + (1 - val / 10) * ch;
-      
       let daysPassed = 0;
       if (i > 0) {
         const prevTime = assessments[i-1].createdAt?.toMillis ? assessments[i-1].createdAt.toMillis() : new Date(assessments[i-1].createdAt || assessments[i-1].date).getTime();
         const currTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || a.date).getTime();
-        if (currTime && prevTime) {
-          daysPassed = Math.floor(Math.max(0, currTime - prevTime) / (1000 * 60 * 60 * 24));
-        }
+        if (currTime && prevTime) daysPassed = Math.floor(Math.max(0, currTime - prevTime) / (1000 * 60 * 60 * 24));
       }
-      
       return { x, y, val, date: a.date, daysPassed };
     });
     let d = `M ${points[0].x} ${points[0].y}`;
     for (let i = 1; i < points.length; i++) d += ` L ${points[i].x} ${points[i].y}`;
     return { points, pathD: d };
   };
-  const chartData = getSvgElements();
+
+  // Shared x-axis labels come from first symptom
+  const baseChartData = assessments.length > 0 ? getSymptomSvgData(activeSymptoms[0]?.key || 'pain') : null;
 
   const handleAddLog = async (e) => {
     e.preventDefault();
@@ -532,6 +543,7 @@ export default function ClinicalTimeline({ token, user }) {
         ) : (
           /* Graph Tab */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            {/* LEFT: Symptom selector + patient info */}
             <div className="space-y-6">
               {/* Patient Quick Profile */}
               <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
@@ -552,41 +564,58 @@ export default function ClinicalTimeline({ token, user }) {
                 </div>
               </div>
 
-              {/* Select Symptom for Chart */}
+              {/* Symptom selector — toggle multi */}
               <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-3">
-                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider text-emerald-800">
-                  เลือกดูแนวโน้มอาการ ESAS
-                </h4>
+                <div className="flex items-center justify-between pb-1">
+                  <h4 className="text-sm font-black text-emerald-800 uppercase tracking-wider">เลือกดูแนวโน้มอาการ ESAS</h4>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">{selectedSymptoms.size} ทับซ้อน</span>
+                </div>
                 <div className="grid grid-cols-1 gap-2">
-                  {symptomsList.map(s => (
-                    <button
-                      key={s.key}
-                      onClick={() => setSelectedSymptom(s.key)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border text-sm font-bold transition-all cursor-pointer ${
-                        selectedSymptom === s.key
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-sm scale-102'
-                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <span className={`w-3 h-3 rounded-full ${s.color}`}></span>
-                        <span>{s.label}</span>
-                      </span>
-                    </button>
-                  ))}
+                  {symptomsList.map(s => {
+                    const active = selectedSymptoms.has(s.key);
+                    return (
+                      <button
+                        key={s.key}
+                        onClick={() => toggleSymptom(s.key)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border text-sm font-bold transition-all cursor-pointer ${
+                          active
+                            ? 'border-2 text-slate-900 shadow-sm scale-[1.01]'
+                            : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                        }`}
+                        style={active ? { borderColor: s.stroke, backgroundColor: s.stroke + '12' } : {}}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <span className={`w-3 h-3 rounded-full ${s.color}`} />
+                          <span>{s.label}</span>
+                        </span>
+                        {active && (
+                          <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs" style={{ backgroundColor: s.stroke }}>✓</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            {/* Graphs & Assessment History */}
+            {/* RIGHT: Sticky Chart + Assessment History */}
             <div className="lg:col-span-2 space-y-6">
-              {/* SVG Trend Graph */}
-              <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm space-y-4">
-                <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                  <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+              {/* STICKY chart panel */}
+              <div className="sticky top-4 z-10 bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-md space-y-4">
+                <div className="flex flex-wrap justify-between items-start gap-2 pb-4 border-b border-slate-100">
+                  <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-emerald-600" />
-                    <span>แนวโน้มคะแนน: {activeSymptom?.label} (0 - 10)</span>
+                    <span>แนวโน้มอาการ (0 - 10)</span>
                   </h3>
+                  {/* Legend */}
+                  <div className="flex flex-wrap gap-2">
+                    {activeSymptoms.map(s => (
+                      <span key={s.key} className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg" style={{ backgroundColor: s.stroke + '18', color: s.stroke }}>
+                        <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: s.stroke }} />
+                        {s.label}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 {assessments.length === 0 ? (
@@ -596,42 +625,41 @@ export default function ClinicalTimeline({ token, user }) {
                 ) : (
                   <div className="w-full overflow-hidden flex flex-col items-center justify-center p-2">
                     <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-xl">
+                      {/* Grid lines */}
                       {[0, 2, 4, 6, 8, 10].map(val => {
                         const y = padding + (1 - val / 10) * (height - padding * 2);
                         return (
                           <g key={val} className="opacity-40">
                             <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4" />
-                            <text x={padding - 10} y={y + 4} textAnchor="end" fontSize="10" fontWeight="bold" fill="#94a3b8">
-                              {val}
-                            </text>
+                            <text x={padding - 10} y={y + 4} textAnchor="end" fontSize="10" fontWeight="bold" fill="#94a3b8">{val}</text>
                           </g>
                         );
                       })}
-                      {chartData && (
-                        <path
-                          d={chartData.pathD}
-                          fill="none"
-                          stroke={activeSymptom?.stroke || '#059669'}
-                          strokeWidth="3.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      )}
-                      {chartData && chartData.points.map((pt, idx) => (
+
+                      {/* One line per selected symptom */}
+                      {activeSymptoms.map(sym => {
+                        const data = getSymptomSvgData(sym.key);
+                        if (!data) return null;
+                        return (
+                          <g key={sym.key}>
+                            <path d={data.pathD} fill="none" stroke={sym.stroke} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+                            {data.points.map((pt, idx) => (
+                              <circle key={idx} cx={pt.x} cy={pt.y} r="5" fill={sym.stroke} stroke="#fff" strokeWidth="2">
+                                <title>{`${sym.label} — ${pt.date}: ${pt.val}/10`}</title>
+                              </circle>
+                            ))}
+                          </g>
+                        );
+                      })}
+
+                      {/* X-axis date labels (shared) */}
+                      {baseChartData && baseChartData.points.map((pt, idx) => (
                         <g key={idx}>
-                          <circle cx={pt.x} cy={pt.y} r="6" fill={activeSymptom?.stroke || '#059669'} stroke="#fff" strokeWidth="2.5" />
-                          <title>{`${pt.date}: คะแนน ${pt.val}/10`}</title>
-                          
-                          {/* Date Label */}
                           <text x={pt.x} y={height - padding + 18} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#64748b">
                             {pt.date.split('/')[0] + '/' + pt.date.split('/')[1]}
                           </text>
-                          
-                          {/* Days passed label */}
                           {pt.daysPassed >= 0 && idx > 0 && (
-                            <text x={pt.x} y={height - padding + 32} textAnchor="middle" fontSize="9" fill="#94a3b8">
-                              +{pt.daysPassed} วัน
-                            </text>
+                            <text x={pt.x} y={height - padding + 30} textAnchor="middle" fontSize="9" fill="#94a3b8">+{pt.daysPassed} วัน</text>
                           )}
                         </g>
                       ))}
