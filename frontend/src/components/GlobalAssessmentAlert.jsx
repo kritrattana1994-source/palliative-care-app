@@ -1,21 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AlertCircle, ClipboardList, X, Bell } from 'lucide-react';
 import { db, collection, onSnapshot } from '../services/firebase';
 
-const playAlertSound = (isCritical) => {
+// Returns a stop function; loops beep pattern until stop() is called
+const startLoopingAlert = (isCritical) => {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
+    if (!AudioContext) return () => {};
     const ctx = new AudioContext();
+    let stopped = false;
 
-    const playBeep = (freq, startTime, duration) => {
+    const playBeep = (freq, startTime, duration, vol = 0.7) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, startTime);
       gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.8, startTime + 0.05);
-      gain.gain.setValueAtTime(0.8, startTime + duration - 0.05);
+      gain.gain.linearRampToValueAtTime(vol, startTime + 0.04);
+      gain.gain.setValueAtTime(vol, startTime + duration - 0.04);
       gain.gain.linearRampToValueAtTime(0, startTime + duration);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -23,24 +25,41 @@ const playAlertSound = (isCritical) => {
       osc.stop(startTime + duration);
     };
 
-    const now = ctx.currentTime;
-    if (isCritical) {
-      playBeep(880, now, 0.15);
-      playBeep(880, now + 0.25, 0.15);
-      playBeep(880, now + 0.5, 0.15);
-      playBeep(880, now + 0.75, 0.2);
-    } else {
-      playBeep(523.25, now, 0.2);
-      playBeep(659.25, now + 0.3, 0.3);
-    }
+    const schedulePattern = (baseTime) => {
+      if (stopped) return;
+
+      if (isCritical) {
+        // 3 fast urgent beeps — total ~1.4s per loop
+        playBeep(880, baseTime,        0.18, 0.8);
+        playBeep(880, baseTime + 0.28, 0.18, 0.8);
+        playBeep(880, baseTime + 0.56, 0.18, 0.8);
+        const loopDuration = 1.4;
+        setTimeout(() => schedulePattern(ctx.currentTime), loopDuration * 1000);
+      } else {
+        // 2 gentle tones — total ~1.8s per loop
+        playBeep(523.25, baseTime,       0.22, 0.65);
+        playBeep(659.25, baseTime + 0.35, 0.28, 0.65);
+        const loopDuration = 1.8;
+        setTimeout(() => schedulePattern(ctx.currentTime), loopDuration * 1000);
+      }
+    };
+
+    schedulePattern(ctx.currentTime);
+
+    return () => {
+      stopped = true;
+      ctx.close();
+    };
   } catch (e) {
     console.error('Audio playback failed', e);
+    return () => {};
   }
 };
 
 export default function GlobalAssessmentAlert() {
-  // Stack of alerts so multiple won't overwrite each other
   const [alerts, setAlerts] = useState([]);
+  // Map alertId -> stopFn
+  const stopFnsRef = useRef({});
 
   useEffect(() => {
     const pageLoadTime = Date.now();
@@ -57,15 +76,28 @@ export default function GlobalAssessmentAlert() {
           if (createdAt > pageLoadTime) {
             const alertObj = { ...data, _id: change.doc.id };
             setAlerts((prev) => [...prev, alertObj]);
-            playAlertSound(data.isCritical);
+            // Start looping sound and store stop function
+            const stopFn = startLoopingAlert(data.isCritical);
+            stopFnsRef.current[change.doc.id] = stopFn;
           }
         }
       });
     });
-    return () => unsub();
+    return () => {
+      unsub();
+      // Stop all sounds on unmount
+      Object.values(stopFnsRef.current).forEach((fn) => fn());
+    };
   }, []);
 
-  const dismiss = (id) => setAlerts((prev) => prev.filter((a) => a._id !== id));
+  const dismiss = (id) => {
+    // Stop the looping sound for this alert
+    if (stopFnsRef.current[id]) {
+      stopFnsRef.current[id]();
+      delete stopFnsRef.current[id];
+    }
+    setAlerts((prev) => prev.filter((a) => a._id !== id));
+  };
 
   if (alerts.length === 0) return null;
 
@@ -75,15 +107,11 @@ export default function GlobalAssessmentAlert() {
         <div
           key={alert._id}
           className={`pointer-events-auto w-80 rounded-2xl shadow-2xl border-2 overflow-hidden
-            ${alert.isCritical
-              ? 'bg-red-50 border-red-400'
-              : 'bg-white border-blue-300'
-            }`}
+            ${alert.isCritical ? 'bg-red-50 border-red-400' : 'bg-white border-blue-300'}`}
           style={{ animation: 'slideInRight 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}
         >
           {/* Header strip */}
-          <div className={`flex items-center justify-between px-4 py-2.5
-            ${alert.isCritical ? 'bg-red-600' : 'bg-blue-600'}`}>
+          <div className={`flex items-center justify-between px-4 py-2.5 ${alert.isCritical ? 'bg-red-600' : 'bg-blue-600'}`}>
             <div className="flex items-center gap-2">
               {alert.isCritical
                 ? <AlertCircle className="w-4 h-4 text-white animate-pulse" />
@@ -111,14 +139,9 @@ export default function GlobalAssessmentAlert() {
               }
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-black text-slate-800 truncate">
-                {alert.patientName}
-              </p>
-              <p className="text-xs text-slate-500 font-semibold">
-                HN: {alert.patientId}
-              </p>
-              <p className={`text-xs font-bold mt-1
-                ${alert.isCritical ? 'text-red-700' : 'text-blue-700'}`}>
+              <p className="text-sm font-black text-slate-800 truncate">{alert.patientName}</p>
+              <p className="text-xs text-slate-500 font-semibold">HN: {alert.patientId}</p>
+              <p className={`text-xs font-bold mt-1 ${alert.isCritical ? 'text-red-700' : 'text-blue-700'}`}>
                 {alert.isCritical
                   ? 'มีคะแนนอาการ ≥ 7 — กรุณาตรวจสอบด่วน'
                   : 'ส่งแบบประเมินอาการเข้ามาใหม่แล้ว'}
@@ -136,7 +159,7 @@ export default function GlobalAssessmentAlert() {
                   : 'bg-blue-50 hover:bg-blue-100 text-blue-700'
                 }`}
             >
-              รับทราบ
+              รับทราบ — หยุดเสียง
             </button>
           </div>
         </div>
