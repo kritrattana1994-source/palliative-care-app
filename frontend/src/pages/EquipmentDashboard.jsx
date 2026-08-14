@@ -192,16 +192,17 @@ export default function EquipmentDashboard({ token }) {
     <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-[#f8fafc] font-['Sarabun']">
       <div className="p-4 md:p-8 max-w-7xl mx-auto w-full">
         
-        {/* Navigation Buttons */}
-        <div className="mb-8 flex flex-wrap justify-center gap-3">
-          <button onClick={() => navigate('/equipments/borrow')} className="bg-white text-blue-600 border border-blue-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm transition-all hover:bg-blue-50">หน้ายืมเครื่อง</button>
-          <button onClick={() => navigate('/equipments/return')} className="bg-white text-red-600 border border-red-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm transition-all hover:bg-red-50 text-center">
-              หน้าคืน/แก้ไข <br/><span className="text-[9px]">(เฉพาะเจ้าหน้าที่)</span>
-          </button>
-          <button onClick={() => navigate('/patients')} className="bg-white text-purple-600 border border-purple-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm transition-all hover:bg-purple-50 text-center">
-              จัดการคนไข้ <br/><span className="text-[9px]">(เฉพาะเจ้าหน้าที่)</span>
-          </button>
-          <button className="bg-slate-800 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm">📊 แดชบอร์ด/พิมพ์ใบงาน</button>
+        {/* Navigation Tabs */}
+        <div className="flex bg-white rounded-2xl shadow-sm overflow-hidden mb-6 border border-slate-100">
+            <button onClick={() => navigate('/equipments')} className="flex-1 py-3.5 font-bold text-sm transition-all bg-blue-50 text-blue-700 border-b-[3px] border-blue-600">
+                📊 แดชบอร์ด
+            </button>
+            <button onClick={() => navigate('/equipments/borrow')} className="flex-1 py-3.5 font-bold text-sm transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-700 border-b-[3px] border-transparent">
+                ➕ ยืมเครื่องมือ
+            </button>
+            <button onClick={() => navigate('/equipments/return')} className="flex-1 py-3.5 font-bold text-sm transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-700 border-b-[3px] border-transparent">
+                ↩️ คืนเครื่องมือ <span className="text-[10px] font-normal ml-1">(เฉพาะเจ้าหน้าที่)</span>
+            </button>
         </div>
 
         {totalCount === 0 && (

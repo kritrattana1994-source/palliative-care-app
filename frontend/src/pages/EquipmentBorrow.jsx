@@ -27,12 +27,6 @@ export default function EquipmentBorrow({ token }) {
     const [hnResult, setHnResult] = useState(null); // { exists: bool, data: obj, msg: string }
     const [isChecking, setIsChecking] = useState(false);
 
-    // Modal State
-    const [showModal, setShowModal] = useState(false);
-    const [regData, setRegData] = useState({
-        hn: '', name: '', caregiverName: '', caregiverRelation: '', address: '', relativePhone: '', status: 'Admit'
-    });
-
     // Patient status
     const ptData = patients.find(p => p.id === selectedPatient);
 
@@ -73,38 +67,11 @@ export default function EquipmentBorrow({ token }) {
                     setSelectedPatient(p.id); // Auto select
                 }
             } else {
-                setHnResult({ exists: false, isDeath: false, data: null, msg: `⚠️ ยังไม่มีข้อมูล HN นี้ในระบบ กรุณาเพิ่มข้อมูลที่ปุ่ม [+ ลงทะเบียนใหม่]` });
+                setHnResult({ exists: false, isDeath: false, data: null, msg: `⚠️ ยังไม่มีข้อมูล HN นี้ในระบบ กรุณาไปลงทะเบียนผู้ป่วยใหม่ที่เมนู "ทะเบียนผู้ป่วย" ก่อนทำรายการ` });
             }
         } catch (error) {
             console.error(error);
         }
-        setIsChecking(false);
-    };
-
-    const handleRegisterPatient = async () => {
-        if (!regData.hn || !regData.name) return alert('กรุณากรอก HN และชื่อคนไข้');
-        setSubmitting(true);
-        try {
-            await setDoc(doc(db, 'patients', regData.hn), {
-                id: regData.hn,
-                name: regData.name,
-                caregiverName: regData.caregiverName,
-                caregiverRelation: regData.caregiverRelation,
-                address: regData.address,
-                relativePhone: regData.relativePhone,
-                status: regData.status
-            });
-            alert('บันทึกคนไข้สำเร็จ');
-            setShowModal(false);
-            setRegData({ hn: '', name: '', caregiverName: '', caregiverRelation: '', address: '', relativePhone: '', status: 'Admit' });
-            await fetchData();
-            setSelectedPatient(regData.hn);
-        } catch (err) {
-            console.error(err);
-            alert('บันทึกผิดพลาด');
-        }
-        setSubmitting(false);
-    };
 
     const addNewItemBlock = () => {
         setItems([...items, { id: Date.now(), equipmentId: '', deposit: 0, note: '', photoFile: null, photoPreview: null }]);
@@ -192,12 +159,19 @@ export default function EquipmentBorrow({ token }) {
     return (
         <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-[#f0f7ff] font-['Sarabun'] relative">
             
-            {/* Nav */}
-            <div className="max-w-4xl mx-auto w-full mt-6 mb-4 px-4 flex flex-wrap justify-center gap-3">
-                <button className="bg-blue-600 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm">หน้ายืมเครื่อง</button>
-                <button onClick={() => navigate('/equipments/return')} className="bg-white text-red-600 border border-red-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-red-50 transition-all">หน้าคืน/แก้ไข</button>
-                <button onClick={() => navigate('/patients')} className="bg-white text-purple-600 border border-purple-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-purple-50 transition-all">จัดการคนไข้</button>
-                <button onClick={() => navigate('/equipments')} className="bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-slate-50 transition-all">แดชบอร์ด</button>
+            <div className="max-w-4xl mx-auto w-full mt-6 px-4">
+                {/* Navigation Tabs */}
+                <div className="flex bg-white rounded-2xl shadow-sm overflow-hidden mb-6 border border-slate-100">
+                    <button onClick={() => navigate('/equipments')} className="flex-1 py-3.5 font-bold text-sm transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-700 border-b-[3px] border-transparent">
+                        📊 แดชบอร์ด
+                    </button>
+                    <button onClick={() => navigate('/equipments/borrow')} className="flex-1 py-3.5 font-bold text-sm transition-all bg-blue-50 text-blue-700 border-b-[3px] border-blue-600">
+                        ➕ ยืมเครื่องมือ
+                    </button>
+                    <button onClick={() => navigate('/equipments/return')} className="flex-1 py-3.5 font-bold text-sm transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-700 border-b-[3px] border-transparent">
+                        ↩️ คืนเครื่องมือ <span className="text-[10px] font-normal ml-1">(เฉพาะเจ้าหน้าที่)</span>
+                    </button>
+                </div>
             </div>
 
             <div className="max-w-2xl mx-auto w-full bg-white rounded-3xl shadow-xl overflow-hidden border-t-8 border-blue-600 p-6 mb-12">
@@ -217,9 +191,6 @@ export default function EquipmentBorrow({ token }) {
                     {hnResult && (
                         <div className={`mt-3 text-xs font-bold p-3 rounded-xl border ${hnResult.exists ? (hnResult.isDeath ? 'text-red-600 bg-red-50 border-red-100' : 'text-green-600 bg-green-50 border-green-100') : 'text-orange-600 bg-orange-50 border-orange-100'}`}>
                             {hnResult.msg}
-                            {!hnResult.exists && (
-                                <button type="button" onClick={() => { setShowModal(true); setRegData({...regData, hn: checkHn.trim()})}} className="ml-2 text-red-500 underline font-black">[+ ลงทะเบียนใหม่]</button>
-                            )}
                         </div>
                     )}
                 </div>
@@ -247,7 +218,6 @@ export default function EquipmentBorrow({ token }) {
                         <div>
                             <div className="flex justify-between items-end mb-1">
                                 <label className="block text-gray-700 text-[10px] font-bold uppercase tracking-widest">เลือกคนไข้ *</label>
-                                <button type="button" onClick={() => setShowModal(true)} className="text-[10px] font-bold text-green-600 hover:underline">+ ลงทะเบียนใหม่</button>
                             </div>
                             <select required value={selectedPatient} onChange={e=>setSelectedPatient(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-xl font-bold text-sm text-slate-700 outline-none focus:border-blue-400 bg-white">
                                 <option value="" disabled>-- เลือกคนไข้ --</option>
@@ -323,37 +293,6 @@ export default function EquipmentBorrow({ token }) {
                 </form>
             </div>
 
-            {/* Patient Modal */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-xl font-bold mb-4 text-green-600 flex items-center gap-2">👤 ลงทะเบียนคนไข้ใหม่</h2>
-                        <div className="space-y-3">
-                            <div><label className="text-[10px] font-bold text-gray-400 uppercase">เลข HN *</label><input type="text" value={regData.hn} onChange={e=>setRegData({...regData, hn: e.target.value})} placeholder="ระบุ HN" className="w-full border border-slate-200 rounded-xl p-3 outline-none text-sm font-bold focus:border-green-400"/></div>
-                            <div><label className="text-[10px] font-bold text-gray-400 uppercase">ชื่อ-นามสกุล คนไข้ *</label><input type="text" value={regData.name} onChange={e=>setRegData({...regData, name: e.target.value})} placeholder="ชื่อ-นามสกุล" className="w-full border border-slate-200 rounded-xl p-3 outline-none text-sm font-bold focus:border-green-400"/></div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className="text-[10px] font-bold text-gray-400 uppercase">ชื่อญาติ</label><input type="text" value={regData.caregiverName} onChange={e=>setRegData({...regData, caregiverName: e.target.value})} placeholder="ชื่อญาติ" className="w-full border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-green-400"/></div>
-                                <div><label className="text-[10px] font-bold text-gray-400 uppercase">ความสัมพันธ์</label><input type="text" value={regData.caregiverRelation} onChange={e=>setRegData({...regData, caregiverRelation: e.target.value})} placeholder="ความสัมพันธ์" className="w-full border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-green-400"/></div>
-                            </div>
-                            <div><label className="text-[10px] font-bold text-gray-400 uppercase">ที่อยู่ปัจจุบัน</label><textarea value={regData.address} onChange={e=>setRegData({...regData, address: e.target.value})} placeholder="ระบุที่อยู่" rows="2" className="w-full border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-green-400"></textarea></div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className="text-[10px] font-bold text-gray-400 uppercase">เบอร์โทรติดต่อ</label><input type="tel" value={regData.relativePhone} onChange={e=>setRegData({...regData, relativePhone: e.target.value})} placeholder="08x-xxxxxxx" className="w-full border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-green-400"/></div>
-                                <div><label className="text-[10px] font-bold text-gray-400 uppercase">สถานะเริ่มต้น</label>
-                                    <select value={regData.status} onChange={e=>setRegData({...regData, status: e.target.value})} className="w-full border border-slate-200 rounded-xl p-3 outline-none text-sm font-bold text-green-600 focus:border-green-400 bg-white">
-                                        <option value="Admit">Admit</option>
-                                        <option value="D/C">D/C</option>
-                                        <option value="เสียชีวิต">เสียชีวิต</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button onClick={handleRegisterPatient} disabled={submitting} className="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg mt-4 active:scale-95 transition-all">
-                                {submitting ? 'บันทึก...' : 'บันทึกข้อมูลคนไข้'}
-                            </button>
-                            <button onClick={() => setShowModal(false)} className="w-full mt-3 text-slate-400 text-sm font-bold underline">ยกเลิก</button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

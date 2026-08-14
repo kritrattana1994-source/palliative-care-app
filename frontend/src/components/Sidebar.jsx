@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { ClipboardList, Users, LogOut, Activity, UserCog, ChevronRight } from 'lucide-react';
+import { ClipboardList, Users, LogOut, Activity, UserCog, ChevronRight, Package } from 'lucide-react';
 
 export default function Sidebar({ user, onLogout }) {
   const navigate = useNavigate();
@@ -43,22 +43,29 @@ export default function Sidebar({ user, onLogout }) {
 
       {/* Navigation */}
       <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-y-auto">
+        
+        {/* เมนูผู้ป่วย */}
         <div className="px-3 pb-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-          เมนูหลัก
+          เมนูผู้ป่วย
         </div>
-
-        <NavLink to="/dashboard" className={navLinkClass}>
-          <ClipboardList className="w-5 h-5 shrink-0" />
-          <span>คิวประเมินรายวัน</span>
-        </NavLink>
-
         <NavLink to="/registry" className={navLinkClass}>
           <Users className="w-5 h-5 shrink-0" />
           <span>ทะเบียนผู้ป่วย</span>
         </NavLink>
 
-        <NavLink to="/equipments" className={navLinkClass}>
+        <div className="my-4 border-t border-slate-800"></div>
+
+        {/* ระบบงานหลัก */}
+        <div className="px-3 pb-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+          ระบบงานหลัก
+        </div>
+        <NavLink to="/dashboard" className={navLinkClass}>
           <ClipboardList className="w-5 h-5 shrink-0" />
+          <span>แบบประเมินรายวัน</span>
+        </NavLink>
+
+        <NavLink to="/equipments" className={navLinkClass}>
+          <Package className="w-5 h-5 shrink-0" />
           <span>ระบบยืม-คืนเครื่องมือ</span>
         </NavLink>
 

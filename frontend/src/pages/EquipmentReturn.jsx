@@ -77,11 +77,19 @@ export default function EquipmentReturn({ token }) {
     return (
         <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-[#f0f7ff] font-['Sarabun'] relative">
             
-            <div className="max-w-5xl mx-auto w-full mt-6 mb-4 px-4 flex flex-wrap justify-center gap-3">
-                <button onClick={() => navigate('/equipments/borrow')} className="bg-white text-blue-600 border border-blue-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-blue-50 transition-all">หน้ายืมเครื่อง</button>
-                <button className="bg-red-600 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm">หน้าคืน/แก้ไข</button>
-                <button onClick={() => navigate('/patients')} className="bg-white text-purple-600 border border-purple-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-purple-50 transition-all">จัดการคนไข้</button>
-                <button onClick={() => navigate('/equipments')} className="bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-slate-50 transition-all">แดชบอร์ด</button>
+            <div className="max-w-5xl mx-auto w-full mt-6 px-4">
+                {/* Navigation Tabs */}
+                <div className="flex bg-white rounded-2xl shadow-sm overflow-hidden mb-6 border border-slate-100">
+                    <button onClick={() => navigate('/equipments')} className="flex-1 py-3.5 font-bold text-sm transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-700 border-b-[3px] border-transparent">
+                        📊 แดชบอร์ด
+                    </button>
+                    <button onClick={() => navigate('/equipments/borrow')} className="flex-1 py-3.5 font-bold text-sm transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-700 border-b-[3px] border-transparent">
+                        ➕ ยืมเครื่องมือ
+                    </button>
+                    <button onClick={() => navigate('/equipments/return')} className="flex-1 py-3.5 font-bold text-sm transition-all bg-blue-50 text-blue-700 border-b-[3px] border-blue-600">
+                        ↩️ คืนเครื่องมือ <span className="text-[10px] font-normal ml-1">(เฉพาะเจ้าหน้าที่)</span>
+                    </button>
+                </div>
             </div>
 
             <div className="max-w-5xl mx-auto w-full flex flex-col lg:flex-row gap-6 px-4 pb-12">
