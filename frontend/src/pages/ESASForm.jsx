@@ -985,7 +985,7 @@ export default function ESASForm() {
 
             <div className="text-center space-y-1">
               <h3 className="font-black text-slate-800 text-xl sm:text-2xl">สรุปผลการประเมิน</h3>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">รอบ {selectedRound} น. ({patient?.name})</p>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">สำหรับผู้ป่วย: {patient?.name}</p>
             </div>
 
             {/* Symptoms Summary Grid */}
