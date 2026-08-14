@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, AlertCircle, CheckCircle2, Clock, Link as LinkIcon, ExternalLink, Calendar, ChevronDown, ChevronUp, User, MapPin, FileText, Heart, Activity, Check, Filter, Sparkles } from 'lucide-react';
+import { Search, AlertCircle, CheckCircle2, Clock, Link as LinkIcon, ExternalLink, Calendar, ChevronDown, ChevronUp, User, MapPin, FileText, Heart, Activity, Check, Filter, Sparkles, Printer } from 'lucide-react';
 import { getAssessmentLink } from '../config';
 import { db, collection, onSnapshot, doc, updateDoc } from '../services/firebase';
 
@@ -467,12 +467,12 @@ export default function Dashboard({ token }) {
                                   </button>
 
                                   <button
-                                    onClick={() => handleOpenLine(patient.relativePhone)}
-                                    className="flex items-center gap-1.5 px-3.5 py-2 bg-line hover:bg-line-hover border border-line-hover rounded-xl text-sm font-bold text-white transition-all shadow-sm shadow-green-600/20 cursor-pointer"
-                                    title="เปิดแอป LINE เพื่อส่งลิงก์"
+                                    onClick={() => window.open(`/print-qr/${patient.token}`, '_blank')}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 transition-all shadow-sm cursor-pointer"
+                                    title="พิมพ์ QR Code สำหรับให้คนไข้สแกน"
                                   >
-                                    <ExternalLink className="w-4 h-4" />
-                                    <span>แชท LINE</span>
+                                    <Printer className="w-4 h-4" />
+                                    <span>พิมพ์ QR</span>
                                   </button>
                                 </>
                               )}
