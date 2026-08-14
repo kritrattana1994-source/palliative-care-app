@@ -22,8 +22,27 @@ export default function EquipmentPrintSlip() {
                     return;
                 }
 
-                const records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const refRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 
+                // Get patientId from the ref records
+                const borrowRecord = refRecords.find(r => r.type === 'ยืม') || refRecords[0];
+                const patientId = borrowRecord?.patientId;
+
+                let records = refRecords;
+                if (patientId) {
+                    // Fetch ALL records for this patient to show full history on the slip
+                    const ptQ = query(collection(db, 'borrow_records'), where('patientId', '==', patientId));
+                    const ptSnap = await getDocs(ptQ);
+                    records = ptSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                }
+                
+                // Sort records chronologically to handle borrow/return sequences correctly
+                records.sort((a, b) => {
+                    const ta = a.timestamp?.seconds || 0;
+                    const tb = b.timestamp?.seconds || 0;
+                    return ta - tb;
+                });
+
                 // Group by equipment to find borrow date and return date
                 const itemsMap = {};
                 records.forEach(r => {
@@ -41,6 +60,8 @@ export default function EquipmentPrintSlip() {
                     const ts = r.timestamp?.toDate ? r.timestamp.toDate() : new Date(r.timestamp);
                     if (r.type === 'ยืม') {
                         itemsMap[eqId].borrowDate = ts;
+                        itemsMap[eqId].returnDate = null; // Reset return date
+                        itemsMap[eqId].status = 'ค้างยืม'; // Reset status
                         itemsMap[eqId].note = r.note; // Keep note from borrow
                     } else if (r.type === 'คืน') {
                         itemsMap[eqId].returnDate = ts;
@@ -48,8 +69,8 @@ export default function EquipmentPrintSlip() {
                     }
                 });
 
-                // Since all records in this Ref ID share the same patient, ward, and staff from the borrow action:
-                const borrowRecord = records.find(r => r.type === 'ยืม');
+                // Find the latest borrow record for patient details
+                const latestBorrowRecord = records.filter(r => r.type === 'ยืม').sort((a,b) => b.timestamp - a.timestamp)[0] || borrowRecord;
                 
                 // Fetch Patient details
                 let pt = { phone: '-', address: '-', relative: '-', relationship: '-', status: 'Unknown' };
@@ -67,9 +88,9 @@ export default function EquipmentPrintSlip() {
 
                 setData({
                     refId: refId,
-                    patientName: borrowRecord?.patientName || '-',
-                    ward: borrowRecord?.ward || '-',
-                    staff: borrowRecord?.staff || '-',
+                    patientName: latestBorrowRecord?.patientName || '-',
+                    ward: latestBorrowRecord?.ward || '-',
+                    staff: latestBorrowRecord?.staff || '-',
                     pt,
                     items: Object.values(itemsMap)
                 });
