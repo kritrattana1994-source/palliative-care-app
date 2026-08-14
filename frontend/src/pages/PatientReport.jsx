@@ -127,13 +127,13 @@ export default function PatientReport() {
             </div>
 
             {/* A4 Portrait Paper Container */}
-            <div className="bg-white mx-auto mt-6 rounded shadow-lg p-8 print:shadow-none print:m-0 print:p-0 print:w-full print:rounded-none" style={{ width: '210mm', minHeight: '297mm' }}>
+            <div className="print-container bg-white mx-auto mt-6 rounded shadow-lg p-8 print:shadow-none print:m-0 print:w-full print:rounded-none" style={{ width: '210mm', minHeight: '297mm' }}>
                 
                 {/* Header */}
                 <div className="flex justify-between items-start border-b-2 border-emerald-700 pb-4 mb-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center text-3xl font-bold shadow-inner">
-                            🫁
+                        <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center shadow-inner">
+                            <HeartPulse className="w-8 h-8" />
                         </div>
                         <div>
                             <h1 className="text-2xl font-black text-emerald-800 uppercase tracking-tight">รายงานสรุปทางคลินิก (Patient Clinical Summary)</h1>
@@ -246,8 +246,12 @@ export default function PatientReport() {
             {/* Global Print Styles inside React */}
             <style dangerouslySetInnerHTML={{__html: `
                 @media print {
-                    @page { size: A4 portrait; margin: 0; }
+                    @page { size: A4 portrait; margin: 10mm; }
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: white !important; }
+                    .print-container { width: 100% !important; min-height: auto !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+                    table { page-break-inside: auto; }
+                    tr { page-break-inside: avoid; page-break-after: auto; }
+                    thead { display: table-header-group; }
                 }
             `}} />
         </div>
