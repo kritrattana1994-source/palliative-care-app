@@ -459,23 +459,23 @@ export default function ESASForm() {
           selfCareGuides[key] = assessmentConfig?.[key]?.[score]?.selfCareGuide || defaultGuide;
       });
 
+      // Determine if any score is critical (>=7)
+      const isCritical = Object.values(scores).some(s => s >= 7);
+      
       const assessmentData = {
         patientId: patient.id,
+        patientName: patient.name,
         scores,
         notes,
         vitalSigns,
         otherSymptoms: otherSymptoms.join(', '),
         selfCareGuides,
+        isCritical,
         createdAt: serverTimestamp(),
         date: new Date().toLocaleDateString('th-TH')
       };
       
       await addDoc(collection(db, 'assessments'), assessmentData);
-      
-      // Determine if any score is critical (>=7)
-      const isCritical = Object.values(scores).some(s => s >= 7);
-      assessmentData.isCritical = isCritical;
-      assessmentData.patientName = patient.name;
 
       await updateDoc(doc(db, 'patients', patient.id), {
           status: 'ประเมินแล้ว',
