@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, BarChart2, CheckCircle, Package, ArrowRightLeft, Download, Printer } from 'lucide-react';
 import { db, collection, onSnapshot, query, orderBy, setDoc, doc, addDoc } from '../services/firebase';
 import { seedData } from '../seedData';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
 const COLORS = ['#0ea5e9', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e', '#f59e0b', '#10b981'];
 
@@ -162,14 +162,23 @@ export default function EquipmentDashboard({ token }) {
       });
   }, [groupedRecords, search, filterStatus, filterWard, filterPatientStatus, patients]);
 
-  // Chart 1: Categories
+  // Chart 1: Status by category (available vs borrowed)
   const categoryData = useMemo(() => {
-      const cats = {};
-      equipments.forEach(eq => {
-          const mainName = eq.name.replace(/เบอร์.*/, '').replace(/\d+/, '').trim();
-          cats[mainName] = (cats[mainName] || 0) + 1;
-      });
-      return Object.keys(cats).map(name => ({ name: name.length > 15 ? name.slice(0,15)+'..' : name, value: cats[name] }));
+    const cats = {};
+    equipments.forEach(eq => {
+      // Derive category name by stripping numbers/sizes
+      const mainName = eq.name
+        .replace(/\s*(เบอร์|ขนาด|เล็ก|กลาง|ใหญ่)[^\s]*/gi, '')
+        .replace(/\s*\d+\s*cc/gi, '')
+        .replace(/\d+/, '')
+        .trim();
+      if (!cats[mainName]) cats[mainName] = { name: mainName, ว่าง: 0, ยืม: 0 };
+      if (eq.status === 'ยืม') cats[mainName]['ยืม']++;
+      else cats[mainName]['ว่าง']++;
+    });
+    return Object.values(cats)
+      .map(c => ({ ...c, name: c.name.length > 12 ? c.name.slice(0, 12) + '..' : c.name }))
+      .sort((a, b) => (b['ว่าง'] + b['ยืม']) - (a['ว่าง'] + a['ยืม']));
   }, [equipments]);
 
   // Chart 2: 6 Months Trend
@@ -247,16 +256,28 @@ export default function EquipmentDashboard({ token }) {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-            <h3 className="font-bold text-slate-700 text-sm mb-4">📊 สถานะเครื่องมือปัจจุบัน (แยกตามหมวดหมู่)</h3>
-            <div className="h-48 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie data={categoryData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} dataKey="value" label={({name})=>name}>
-                            {categoryData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                        </Pie>
-                        <Tooltip />
-                    </PieChart>
-                </ResponsiveContainer>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-700 text-sm">📊 สถานะเครื่องมือปัจจุบัน (แยกตามหมวดหมู่)</h3>
+              <div className="flex items-center gap-3 text-xs font-bold">
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block"></span>ว่าง</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-400 inline-block"></span>ยืม</span>
+              </div>
+            </div>
+            <div className="h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={categoryData} barCategoryGap="30%" barGap={3}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontFamily: 'Sarabun' }} />
+                  <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                  <Tooltip
+                    cursor={{ fill: '#f8fafc' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontFamily: 'Sarabun', fontSize: 13 }}
+                    formatter={(value, name) => [`${value} ชิ้น`, name]}
+                  />
+                  <Bar dataKey="ว่าง" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                  <Bar dataKey="ยืม" fill="#f87171" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
