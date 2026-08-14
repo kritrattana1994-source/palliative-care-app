@@ -72,6 +72,8 @@ export default function EquipmentBorrow({ token }) {
         } catch (error) {
             console.error(error);
         }
+        setIsChecking(false);
+    };
 
     const addNewItemBlock = () => {
         setItems([...items, { id: Date.now(), equipmentId: '', deposit: 0, note: '', photoFile: null, photoPreview: null }]);
