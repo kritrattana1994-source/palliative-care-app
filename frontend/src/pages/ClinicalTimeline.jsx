@@ -24,6 +24,11 @@ export default function ClinicalTimeline({ token }) {
   const [aiSummary, setAiSummary] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
+  const formatForDatetimeLocal = (d) => {
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+  const [logDatetime, setLogDatetime] = useState(formatForDatetimeLocal(new Date()));
+
   const symptomsList = [
     { key: 'pain', label: 'ความปวด', color: 'bg-red-500', stroke: '#ef4444' },
     { key: 'shortnessOfBreath', label: 'หายใจเหนื่อยหอบ', color: 'bg-orange-500', stroke: '#f97316' },
@@ -111,18 +116,20 @@ export default function ClinicalTimeline({ token }) {
       other: '📝 บันทึกอื่น ๆ'
     };
     try {
+      const selectedDate = new Date(logDatetime);
       const newLog = {
         category,
         title: tm[category] || 'บันทึกเหตุการณ์',
         content,
         recordedBy,
-        createdAt: new Date().toISOString(),
-        date: new Date().toLocaleDateString('th-TH'),
-        time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+        createdAt: selectedDate.toISOString(),
+        date: selectedDate.toLocaleDateString('th-TH'),
+        time: selectedDate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
       };
       const logRef = await addDoc(collection(db, 'patients', id, 'eventLogs'), newLog);
       setEventLogs(prev => [{ id: logRef.id, ...newLog }, ...prev]);
       setContent('');
+      setLogDatetime(formatForDatetimeLocal(new Date()));
     } catch (err) {
       console.error(err);
     } finally {
@@ -390,6 +397,17 @@ export default function ClinicalTimeline({ token }) {
                     <option value="visit">🏡 เยี่ยมบ้าน (Home Visit)</option>
                     <option value="other">📝 บันทึกความก้าวหน้าอื่น ๆ</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">วันที่และเวลา</label>
+                  <input 
+                    type="datetime-local" 
+                    value={logDatetime} 
+                    onChange={e => setLogDatetime(e.target.value)} 
+                    required 
+                    className="w-full px-4 py-3 border border-slate-300 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-slate-700"
+                  />
                 </div>
 
                 <div>
