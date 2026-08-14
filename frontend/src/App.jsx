@@ -15,6 +15,7 @@ import EquipmentPrintSlip from './pages/EquipmentPrintSlip';
 import EquipmentManagement from './pages/EquipmentManagement';
 import PrintQR from './pages/PrintQR';
 import PatientReport from './pages/PatientReport';
+import GlobalAssessmentAlert from './components/GlobalAssessmentAlert';
 import { auth, onAuthStateChanged, signOut, db, doc, getDoc } from './services/firebase';
 
 export default function App() {
@@ -64,6 +65,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      {token && <GlobalAssessmentAlert />}
       <Routes>
         <Route path="/assess/:token" element={<ESASForm />} />
         <Route path="/print-qr/:token" element={token ? <PrintQR /> : <Navigate to="/login" replace />} />
