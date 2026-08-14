@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Calendar, FileText, CheckCircle, TrendingUp, AlertTriangle, 
   User, MapPin, Sparkles, Phone, Pill, Activity, Users, Home, 
-  ClipboardList, Clock, X, Send, ShieldAlert, Heart, Gauge, Thermometer, Wind
+  ClipboardList, Clock, X, Send, ShieldAlert, Heart, HeartPulse, Gauge, Thermometer, Wind
 } from 'lucide-react';
-import { db, doc, getDoc, collection, query, where, getDocs, addDoc, orderBy } from '../services/firebase';
+import { db, doc, getDoc, setDoc, collection, query, where, getDocs, addDoc, orderBy } from '../services/firebase';
 
 export default function ClinicalTimeline({ token }) {
   const { id } = useParams();
@@ -120,6 +120,46 @@ export default function ClinicalTimeline({ token }) {
     }
   };
 
+  const handleStatusChange = async (newStatus) => {
+    try {
+      const ptRef = doc(db, 'patients', id);
+      await setDoc(ptRef, { status: newStatus }, { merge: true });
+      setPatient(prev => ({ ...prev, status: newStatus }));
+      
+      const newLog = {
+        category: 'other',
+        title: `🔄 เปลี่ยนสถานะผู้ป่วยเป็น: ${newStatus}`,
+        content: `เจ้าหน้าที่อัปเดตสถานะผู้ป่วยเป็น ${newStatus}`,
+        recordedBy: 'ระบบ',
+        createdAt: new Date().toISOString(),
+        date: new Date().toLocaleDateString('th-TH'),
+        time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+      };
+      await addDoc(collection(db, 'patients', id, 'eventLogs'), newLog);
+      setEventLogs(prev => [newLog, ...prev]);
+    } catch (err) {
+      console.error(err);
+      alert('ไม่สามารถอัปเดตสถานะได้: ' + err.message);
+    }
+  };
+
+  const combinedTimeline = [
+    ...eventLogs.map(log => ({ 
+      ...log, 
+      isAssessment: false, 
+      sortTime: new Date(log.createdAt).getTime() 
+    })), 
+    ...assessments.map(ass => ({
+      id: ass.id,
+      isAssessment: true,
+      title: `📊 ประเมินอาการ (รอบ ${ass.round})`,
+      date: ass.date,
+      time: ass.createdAt?.toDate ? ass.createdAt.toDate().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '',
+      sortTime: ass.createdAt?.toMillis ? ass.createdAt.toMillis() : 0,
+      assData: ass
+    }))
+  ].sort((a, b) => b.sortTime - a.sortTime);
+
   const handleAiSummary = async () => {
     setShowAiModal(true);
     setAiLoading(true);
@@ -217,9 +257,19 @@ export default function ClinicalTimeline({ token }) {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-black text-slate-900">{patient?.name}</h2>
-                <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Home Ward Active
-                </span>
+                <select 
+                  value={patient?.status || 'Admit'} 
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  className={`inline-flex px-2.5 py-1 rounded-full text-xs font-black border outline-none cursor-pointer ${
+                    patient?.status === 'Admit' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    patient?.status === 'เสียชีวิต' ? 'bg-red-50 text-red-700 border-red-200' :
+                    'bg-slate-100 text-slate-700 border-slate-300'
+                  }`}
+                >
+                  <option value="Admit">Admit (กำลังดูแล)</option>
+                  <option value="D/C">D/C (จำหน่าย)</option>
+                  <option value="เสียชีวิต">เสียชีวิต</option>
+                </select>
               </div>
               <p className="text-xs text-slate-500 font-bold mt-0.5">
                 HN: {patient?.id} • <span className="text-emerald-800">{patient?.disease}</span>
@@ -374,30 +424,61 @@ export default function ClinicalTimeline({ token }) {
                 </h3>
               </div>
 
-              {eventLogs.length === 0 ? (
+              {combinedTimeline.length === 0 ? (
                 <div className="text-center py-12 text-slate-400 font-bold text-sm">
                   ยังไม่มีบันทึกเหตุการณ์สำหรับผู้ป่วยรายนี้
                 </div>
               ) : (
                 <div className="relative border-l-2 border-emerald-200 pl-6 ml-5 space-y-6">
-                  {eventLogs.map(log => (
+                  {combinedTimeline.map(log => (
                     <div key={log.id} className="relative">
                       <div className="absolute -left-[45px] top-0">
-                        {getTimelineIcon(log.category)}
+                        {log.isAssessment ? (
+                           <div className="w-10 h-10 rounded-2xl bg-indigo-500 border-2 border-white text-white flex items-center justify-center shadow-md"><ClipboardList className="w-5 h-5" /></div>
+                        ) : getTimelineIcon(log.category)}
                       </div>
                       <div className="bg-slate-50/90 hover:bg-white border border-slate-200/80 rounded-2xl p-5 space-y-2 shadow-xs transition-all">
                         <div className="flex justify-between items-center text-xs font-bold text-slate-400">
-                          <h4 className="text-slate-900 font-black text-sm">{log.title}</h4>
+                          <h4 className={`font-black text-sm ${log.isAssessment ? 'text-indigo-700' : 'text-slate-900'}`}>{log.title}</h4>
                           <span className="bg-white px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600">
                             {log.date} {log.time && `• ${log.time}`}
                           </span>
                         </div>
-                        <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                          {log.content}
-                        </p>
-                        <div className="text-[11px] text-slate-400 font-bold pt-1.5 flex justify-end">
-                          ✍️ โดย: {log.recordedBy}
-                        </div>
+                        {log.isAssessment ? (
+                          <div className="mt-3">
+                            <div className="grid grid-cols-4 sm:grid-cols-9 gap-1.5">
+                               {symptomsList.map(s => {
+                                 const val = (log.assData.scores && log.assData.scores[s.key]) ?? 0;
+                                 return (
+                                   <div key={s.key} className="text-center p-1.5 bg-white border border-slate-100 rounded-xl shadow-xs">
+                                     <p className="text-[9px] font-bold text-slate-400 truncate">{s.label.split('/')[0].split(' ')[0]}</p>
+                                     <p className={`text-sm font-black ${val >= 7 ? 'text-red-500' : 'text-slate-700'}`}>{val}</p>
+                                   </div>
+                                 );
+                               })}
+                            </div>
+                            {(log.assData.vitalSigns || log.assData.bp || log.assData.pulse) && (
+                                <div className="flex flex-wrap gap-3 text-[10px] mt-3 font-bold text-slate-500 bg-white p-2.5 rounded-xl border border-slate-100 shadow-xs">
+                                   <span className="flex items-center gap-1"><Activity className="w-3 h-3 text-rose-500"/> BP: {log.assData.vitalSigns?.bp || log.assData.bp || '-'}</span>
+                                   <span className="flex items-center gap-1"><Heart className="w-3 h-3 text-red-500"/> HR: {log.assData.vitalSigns?.pulse || log.assData.pulse || '-'}</span>
+                                   <span className="flex items-center gap-1"><Thermometer className="w-3 h-3 text-amber-500"/> Temp: {log.assData.vitalSigns?.temp || log.assData.temp || '-'}</span>
+                                   <span className="flex items-center gap-1"><Wind className="w-3 h-3 text-blue-500"/> SpO2: {log.assData.vitalSigns?.spo2 || log.assData.spo2 || '-'}</span>
+                                </div>
+                            )}
+                            {log.assData.notes && (
+                              <div className="text-xs text-slate-600 mt-3 bg-amber-50/70 border border-amber-100 p-2.5 rounded-xl font-medium">💬 {log.assData.notes}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-700 leading-relaxed font-medium mt-1">
+                            {log.content}
+                          </p>
+                        )}
+                        {!log.isAssessment && (
+                          <div className="text-[11px] text-slate-400 font-bold pt-2 flex justify-end">
+                            ✍️ โดย: {log.recordedBy}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
