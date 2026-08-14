@@ -81,6 +81,7 @@ export default function PatientReport() {
                 setData({
                     patient: patientData,
                     latestAssessment: assessments[0] || null,
+                    assessments: assessments,
                     timeline: eventLogs.slice(0, 8), // Show last 8 events
                     equipments: outstandingEq
                 });
@@ -169,58 +170,41 @@ export default function PatientReport() {
 
                     </div>
 
-                    {/* Middle Column (Latest ESAS) */}
+                    {/* Middle Column (ESAS History) */}
                     <div className="col-span-8">
                         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm h-[380px] flex flex-col">
                             <h3 className="text-xs font-black text-indigo-700 uppercase mb-4 flex items-center gap-1.5 justify-between">
-                                <span className="flex items-center gap-1.5"><Activity className="w-4 h-4"/> ผลการประเมินอาการล่าสุด (Latest ESAS)</span>
-                                {data.latestAssessment && <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-xl text-[10px] tracking-wide">{data.latestAssessment.date} {data.latestAssessment.createdAt?.toDate ? data.latestAssessment.createdAt.toDate().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : ''}</span>}
+                                <span className="flex items-center gap-1.5"><Activity className="w-4 h-4"/> ประวัติผลการประเมินอาการ (ESAS History)</span>
                             </h3>
                             
-                            {!data.latestAssessment ? (
+                            {!data.assessments || data.assessments.length === 0 ? (
                                 <div className="flex-1 flex justify-center items-center text-slate-400 font-bold text-sm italic">ยังไม่มีข้อมูลการประเมิน</div>
                             ) : (
-                                <div className="space-y-4">
-                                    {/* Score Grid */}
-                                    <div className="grid grid-cols-9 gap-1.5">
-                                        {symptomsList.map(s => {
-                                            const val = (data.latestAssessment.scores && data.latestAssessment.scores[s.key]) ?? 0;
-                                            const isHigh = val >= 7;
-                                            const isMid = val >= 4 && val <= 6;
-                                            return (
-                                                <div 
-                                                    key={s.key} 
-                                                    className={`p-2 rounded-xl border text-center ${
-                                                        isHigh 
-                                                        ? 'bg-red-50 border-red-200' 
-                                                        : isMid
-                                                        ? 'bg-amber-50 border-amber-200'
-                                                        : 'bg-slate-50 border-slate-100'
-                                                    }`}
-                                                >
-                                                    <p className={`text-[9px] font-black tracking-tighter leading-tight ${isHigh ? 'text-red-700' : 'text-slate-500'}`}>{s.short}</p>
-                                                    <p className={`text-lg font-black mt-1 ${isHigh ? 'text-red-600' : 'text-slate-800'}`}>{val}</p>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    
-                                    {/* Vitals */}
-                                    {(data.latestAssessment.vitalSigns || data.latestAssessment.bp) && (
-                                        <div className="flex flex-wrap gap-4 text-xs mt-2 font-bold text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100 justify-center">
-                                            <span className="flex items-center gap-1.5"><Activity className="w-4 h-4 text-rose-500"/> BP: {data.latestAssessment.vitalSigns?.bp || data.latestAssessment.bp || '-'}</span>
-                                            <span className="flex items-center gap-1.5"><Heart className="w-4 h-4 text-red-500"/> HR: {data.latestAssessment.vitalSigns?.pulse || data.latestAssessment.pulse || '-'}</span>
-                                            <span className="flex items-center gap-1.5"><Thermometer className="w-4 h-4 text-amber-500"/> Temp: {data.latestAssessment.vitalSigns?.temp || data.latestAssessment.temp || '-'}</span>
-                                            <span className="flex items-center gap-1.5"><Wind className="w-4 h-4 text-blue-500"/> SpO2: {data.latestAssessment.vitalSigns?.spo2 || data.latestAssessment.spo2 || '-'}</span>
-                                        </div>
-                                    )}
-
-                                    {/* Notes */}
-                                    {data.latestAssessment.notes && (
-                                        <div className="text-[11px] text-slate-700 bg-amber-50/50 border border-amber-100 p-2.5 rounded-xl font-semibold leading-relaxed">
-                                            <span className="text-amber-800 font-bold">บันทึกอาการเพิ่มเติม: </span>{data.latestAssessment.notes}
-                                        </div>
-                                    )}
+                                <div className="overflow-auto flex-1 pr-2">
+                                    <table className="w-full text-center border-collapse border-b border-slate-200">
+                                        <thead className="bg-indigo-50 text-[10px] font-black text-indigo-800 uppercase sticky top-0">
+                                            <tr>
+                                                <th className="border-y border-slate-200 px-2 py-2 text-left bg-indigo-50">วัน-เวลา</th>
+                                                {symptomsList.map(s => <th key={s.key} className="border-y border-slate-200 px-1 py-2 bg-indigo-50">{s.short}</th>)}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.assessments.slice(0, 15).map((ass, idx) => (
+                                                <tr key={idx} className="bg-white text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                                                    <td className="border-b border-slate-200 px-2 py-2 whitespace-nowrap text-left">{ass.date} {ass.createdAt?.toDate ? ass.createdAt.toDate().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : ''}</td>
+                                                    {symptomsList.map(s => {
+                                                        const val = (ass.scores && ass.scores[s.key]) ?? 0;
+                                                        const isHigh = val >= 7;
+                                                        return (
+                                                            <td key={s.key} className={`border-b border-slate-200 px-1 py-2 ${isHigh ? 'text-red-600 font-black bg-red-50/50' : 'text-slate-600'}`}>
+                                                                {val}
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
                         </div>
