@@ -32,23 +32,17 @@ export default function Dashboard({ token }) {
   }, [token]);
 
   const handleCopyLink = async (patient) => {
-    const link = getAssessmentLink(patient.token);
     try {
-      await navigator.clipboard.writeText(link);
+      let ptToken = patient.token;
+      if (!ptToken) {
+        ptToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        await updateDoc(doc(db, 'patients', patient.id), { status: 'รอตอบแบบประเมิน', token: ptToken });
+      } else if (patient.status !== 'ประเมินแล้ว') {
+        await updateDoc(doc(db, 'patients', patient.id), { status: 'รอตอบแบบประเมิน' });
+      }
+      await navigator.clipboard.writeText(getAssessmentLink(ptToken));
       setCopiedId(patient.id);
       setTimeout(() => setCopiedId(null), 2000);
-      if (patient.status === 'ยังไม่ส่งลิงก์') {
-        // We assume token was generated previously or handle it.
-        // If no token exists, we should generate one before copying.
-        let ptToken = patient.token;
-        if (!ptToken) {
-            ptToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-            await updateDoc(doc(db, 'patients', patient.id), { status: 'ส่งแล้ว (รอผล)', token: ptToken });
-            await navigator.clipboard.writeText(getAssessmentLink(ptToken));
-        } else {
-            await updateDoc(doc(db, 'patients', patient.id), { status: 'ส่งแล้ว (รอผล)' });
-        }
-      }
     } catch (err) {
       alert('ไม่สามารถคัดลอกลิงก์ได้ กรุณาลองใหม่อีกครั้ง');
     }
@@ -379,15 +373,12 @@ export default function Dashboard({ token }) {
 
                           {/* Status */}
                           <td className="px-6 py-4">
-                            {patient.status === 'ยังไม่ส่งลิงก์' ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                                ยังไม่ส่งลิงก์
-                              </span>
-                            ) : patient.status === 'ส่งแล้ว (รอผล)' ? (
+                            {patient.status === 'ยังไม่ส่งลิงก์' || !patient.status ? (
+                              <span className="text-slate-400 text-sm font-bold">-</span>
+                            ) : patient.status === 'รอตอบแบบประเมิน' || patient.status === 'ส่งแล้ว (รอผล)' ? (
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-sm">
                                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                                ส่งแล้ว (รอผล)
+                                รอตอบแบบประเมิน
                               </span>
                             ) : (
                               <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${critical ? 'bg-red-100 text-red-700 border-red-200 shadow-sm' : 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'}`}>
