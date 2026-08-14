@@ -652,74 +652,14 @@ export default function ESASForm() {
       <div className="w-full max-w-lg space-y-4">
         
         {/* Header Bar */}
-        <div className="bg-white rounded-2xl px-5 py-4 border border-slate-200 shadow-sm flex justify-between items-center">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-200 shadow-inner">
-              <Activity className="w-5 h-5" />
+        <div className="bg-white rounded-2xl px-5 py-4 border border-slate-200 shadow-sm flex items-center justify-center text-center">
+          <div>
+            <div className="text-base font-black text-slate-800 flex items-center justify-center gap-2">
+              <Activity className="w-5 h-5 text-emerald-600" /> ระบบประเมินอาการผู้ป่วย (ESAS)
             </div>
-            <div>
-              <div className="text-base font-black text-slate-800">แบบประเมินอาการ ESAS</div>
-              <div className="text-xs text-slate-500 font-medium">รพ.พล Home Ward</div>
-            </div>
-          </div>
-          
-          <div className="flex flex-col items-end gap-1.5">
-            <button 
-              type="button"
-              onClick={() => {
-                const nextVal = !autoPlayVoice;
-                setAutoPlayVoice(nextVal);
-                if (nextVal) speakText('เปิดระบบเสียงพูดแล้วค่ะ');
-              }} 
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-black transition-all border cursor-pointer ${
-                autoPlayVoice 
-                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-sm ring-2 ring-emerald-100' 
-                  : 'bg-slate-100 border-slate-300 text-slate-500'
-              }`}
-            >
-              {autoPlayVoice ? (
-                <><Volume2 className="w-4 h-4 text-emerald-600" /><span>เปิดเสียง</span></>
-              ) : (
-                <><VolumeX className="w-4 h-4 text-slate-400" /><span>ปิดเสียง</span></>
-              )}
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => {
-                const nextEngine = ttsEngine === 'native' ? 'google' : 'native';
-                setTtsEngine(nextEngine);
-                
-                setTimeout(() => {
-                  const alertMsg = nextEngine === 'google' 
-                    ? 'เปลี่ยนมาใช้ระบบเสียงสำรอง' 
-                    : 'เปลี่ยนกลับมาใช้ระบบเสียงมาตรฐาน';
-                  
-                  if (nextEngine === 'google') {
-                     const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=th&client=tw-ob&q=${encodeURIComponent(alertMsg)}`;
-                     const audio = document.createElement('audio');
-                     audio.referrerPolicy = 'no-referrer';
-                     audio.src = url;
-                     audio.play().catch(e=>console.log(e));
-                  } else {
-                     if ('speechSynthesis' in window) {
-                       window.speechSynthesis.cancel();
-                       const u = new SpeechSynthesisUtterance(alertMsg);
-                       u.lang = 'th-TH';
-                       if (thaiVoiceRef.current) u.voice = thaiVoiceRef.current;
-                       setTimeout(() => window.speechSynthesis.speak(u), 50);
-                     }
-                  }
-                }, 50);
-              }}
-              className="text-[10px] text-slate-400 hover:text-emerald-600 font-bold underline cursor-pointer"
-            >
-              ไม่มีเสียง? ลองเปลี่ยนระบบ (ปัจจุบัน: {ttsEngine === 'native' ? 'มาตรฐาน' : 'สำรอง'})
-            </button>
+            <div className="text-xs text-slate-500 font-medium mt-0.5">โรงพยาบาลพล • ศูนย์การดูแลแบบประคับประคอง</div>
           </div>
         </div>
-
-          {/* Header Bar */}
 
         {/* STEP 0: Welcome Screen */}
         {!started ? (
@@ -1135,6 +1075,67 @@ export default function ESASForm() {
                 )}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Voice Control Footer */}
+        {!submitted && (
+          <div className="bg-white rounded-2xl px-5 py-4 border border-slate-200 shadow-sm flex flex-col items-center gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-slate-600">ระบบเสียงบรรยาย:</span>
+              <button 
+                type="button"
+                onClick={() => {
+                  const nextVal = !autoPlayVoice;
+                  setAutoPlayVoice(nextVal);
+                  if (nextVal) speakText('เปิดระบบเสียงพูดแล้วค่ะ');
+                }} 
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-black transition-all border cursor-pointer ${
+                  autoPlayVoice 
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-sm ring-2 ring-emerald-100' 
+                    : 'bg-slate-100 border-slate-300 text-slate-500'
+                }`}
+              >
+                {autoPlayVoice ? (
+                  <><Volume2 className="w-4 h-4 text-emerald-600" /><span>เปิดเสียง</span></>
+                ) : (
+                  <><VolumeX className="w-4 h-4 text-slate-400" /><span>ปิดเสียง</span></>
+                )}
+              </button>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => {
+                const nextEngine = ttsEngine === 'native' ? 'google' : 'native';
+                setTtsEngine(nextEngine);
+                
+                setTimeout(() => {
+                  const alertMsg = nextEngine === 'google' 
+                    ? 'เปลี่ยนมาใช้ระบบเสียงสำรอง' 
+                    : 'เปลี่ยนกลับมาใช้ระบบเสียงมาตรฐาน';
+                  
+                  if (nextEngine === 'google') {
+                     const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=th&client=tw-ob&q=${encodeURIComponent(alertMsg)}`;
+                     const audio = document.createElement('audio');
+                     audio.referrerPolicy = 'no-referrer';
+                     audio.src = url;
+                     audio.play().catch(e=>console.log(e));
+                  } else {
+                     if ('speechSynthesis' in window) {
+                       window.speechSynthesis.cancel();
+                       const u = new SpeechSynthesisUtterance(alertMsg);
+                       u.lang = 'th-TH';
+                       if (thaiVoiceRef.current) u.voice = thaiVoiceRef.current;
+                       setTimeout(() => window.speechSynthesis.speak(u), 50);
+                     }
+                  }
+                }, 50);
+              }}
+              className="text-[10px] text-slate-400 hover:text-emerald-600 font-bold underline cursor-pointer"
+            >
+              ไม่มีเสียง? ลองเปลี่ยนระบบ (ปัจจุบัน: {ttsEngine === 'native' ? 'มาตรฐาน' : 'สำรอง'})
+            </button>
           </div>
         )}
 
