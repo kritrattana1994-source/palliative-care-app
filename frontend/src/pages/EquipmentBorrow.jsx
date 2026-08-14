@@ -60,10 +60,10 @@ export default function EquipmentBorrow({ token }) {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const p = docSnap.data();
-                if (p.status === 'เสียชีวิต') {
-                    setHnResult({ exists: true, isDeath: true, data: p, msg: `✅ พบข้อมูล: ${p.name} (สถานะ: เสียชีวิต) - ❌ ไม่สามารถยืมเครื่องใหม่ได้` });
+                if (p.clinicalStatus === 'เสียชีวิต') {
+                    setHnResult({ exists: true, isDeath: true, data: p, msg: `✅ พบข้อมูล: ${p.name} (สถานะ: ${p.clinicalStatus || 'Admit'}) \n❌ ไม่สามารถยืมเครื่องใหม่ได้ เนื่องจากเสียชีวิตแล้ว` });
                 } else {
-                    setHnResult({ exists: true, isDeath: false, data: p, msg: `✅ พบข้อมูล: ${p.name} (สถานะ: ${p.status}) - สามารถเลือกชื่อในช่อง "เลือกคนไข้" ด้านล่างได้เลย` });
+                    setHnResult({ exists: true, isDeath: false, data: p, msg: `✅ พบข้อมูล: ${p.name} (สถานะ: ${p.clinicalStatus || 'Admit'}) - สามารถเลือกชื่อในช่อง "เลือกคนไข้" ด้านล่างได้เลย` });
                     setSelectedPatient(p.id); // Auto select
                 }
             } else {
@@ -235,10 +235,10 @@ export default function EquipmentBorrow({ token }) {
                                 <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">ปรับปรุงสถานะคนไข้ (ถ้ามี)</p>
                                 <select 
                                     className="w-40 p-2 border border-blue-200 rounded-xl text-xs font-black text-blue-700 outline-none bg-white shadow-inner"
-                                    value={ptData.status}
+                                    value={ptData.clinicalStatus || 'Admit'}
                                     onChange={(e) => {
                                         // Auto update patient status in background (Optional)
-                                        updateDoc(doc(db, 'patients', ptData.id), { status: e.target.value });
+                                        updateDoc(doc(db, 'patients', ptData.id), { clinicalStatus: e.target.value });
                                     }}
                                 >
                                     <option value="Admit">Admit</option>
@@ -248,7 +248,7 @@ export default function EquipmentBorrow({ token }) {
                             </div>
                             <div className="text-right">
                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">สถานะเดิม</p>
-                                <p className="text-sm font-black text-slate-600">{ptData.status}</p>
+                                <p className="text-sm font-black text-slate-600">{ptData.clinicalStatus || 'Admit'}</p>
                             </div>
                         </div>
                     )}

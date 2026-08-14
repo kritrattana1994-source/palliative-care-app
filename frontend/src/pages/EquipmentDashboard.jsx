@@ -149,7 +149,7 @@ export default function EquipmentDashboard({ token }) {
   // Apply Filters
   const filteredRecords = useMemo(() => {
       return groupedRecords.filter(pt => {
-          const ptStatus = patients[pt.patientId]?.status || 'Unknown';
+          const ptStatus = patients[pt.patientId]?.clinicalStatus || 'Admit';
           const searchMatch = !search || 
                 pt.latestRef.toLowerCase().includes(search.toLowerCase()) || 
                 pt.patientName.toLowerCase().includes(search.toLowerCase()) ||
@@ -331,7 +331,7 @@ export default function EquipmentDashboard({ token }) {
                       <tr><td colSpan="6" className="p-10 text-center text-slate-300 italic font-medium">ไม่พบข้อมูลใบงาน</td></tr>
                   ) : (
                       filteredRecords.map(ref => {
-                          const isDeath = patients[ref.patientId]?.status === 'เสียชีวิต';
+                          const isDeath = patients[ref.patientId]?.clinicalStatus === 'เสียชีวิต';
                           return (
                           <tr key={ref.patientId} className="hover:bg-slate-50/50 transition-colors">
                               <td className="px-6 py-4 font-bold text-blue-600 font-mono text-xs">{ref.latestRef}</td>
