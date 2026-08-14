@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, Plus, Trash2, Camera, User, Package, AlertCircle, CheckCircle, Search, X } from 'lucide-react';
 import { db, collection, getDocs, setDoc, addDoc, updateDoc, doc, getDoc, serverTimestamp } from '../services/firebase';
+import { writeAuditLog } from '../services/auditLog';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from '../services/firebase';
 
 const storage = getStorage(app);
 
-export default function EquipmentBorrow({ token }) {
+export default function EquipmentBorrow({ token, user }) {
     const navigate = useNavigate();
     const [patients, setPatients] = useState([]);
     const [equipments, setEquipments] = useState([]);
@@ -148,6 +149,7 @@ export default function EquipmentBorrow({ token }) {
             }
             
             alert('บันทึกรายการยืมสำเร็จ! Ref ID: ' + generatedRefId);
+            writeAuditLog(user, 'BORROW_EQUIPMENT', 'equipment', generatedRefId, `ยืมเครื่องมือ ${items.length} รายการ`, `Ref: ${generatedRefId}`);
             navigate('/equipments');
         } catch (err) {
             console.error(err);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { ClipboardList, Users, LogOut, Activity, UserCog, ChevronRight, Package } from 'lucide-react';
+import { ClipboardList, Users, LogOut, Activity, UserCog, ChevronRight, Package, History } from 'lucide-react';
 
 export default function Sidebar({ user, onLogout }) {
   const navigate = useNavigate();
@@ -89,6 +89,17 @@ export default function Sidebar({ user, onLogout }) {
             </NavLink>
           </>
         )}
+
+        {/* ทุก User เห็น */}
+        <div className="my-4 border-t border-slate-800"></div>
+        <div className="px-3 pb-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+          รายงาน
+        </div>
+        <NavLink to="/audit-log" className={navLinkClass}>
+          <History className="w-5 h-5 shrink-0" />
+          <span>ประวัติการใช้งาน</span>
+        </NavLink>
+
       </nav>
 
       {/* User profile & Logout */}

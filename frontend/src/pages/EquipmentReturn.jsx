@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Save, Package, ArrowLeft, CheckCircle } from 'lucide-react';
 import { db, collection, getDocs, setDoc, updateDoc, doc, serverTimestamp, query, where, orderBy, onSnapshot } from '../services/firebase';
+import { writeAuditLog } from '../services/auditLog';
 
-export default function EquipmentReturn({ token }) {
+export default function EquipmentReturn({ token, user }) {
     const navigate = useNavigate();
     const [borrowedEquipments, setBorrowedEquipments] = useState([]);
     const [search, setSearch] = useState('');
@@ -61,6 +62,7 @@ export default function EquipmentReturn({ token }) {
             });
 
             alert('บันทึกรับคืนอุปกรณ์สำเร็จ!');
+            writeAuditLog(user, 'RETURN_EQUIPMENT', 'equipment', selectedItem.id, selectedItem.name, `สภาพ: ${returnCondition}`);
             setSelectedItem(null);
         } catch (err) {
             console.error(err);

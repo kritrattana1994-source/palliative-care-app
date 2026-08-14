@@ -6,8 +6,9 @@ import {
   ClipboardList, Clock, X, Send, ShieldAlert, Heart, HeartPulse, Gauge, Thermometer, Wind, Printer
 } from 'lucide-react';
 import { db, doc, getDoc, setDoc, collection, query, where, getDocs, addDoc, orderBy } from '../services/firebase';
+import { writeAuditLog } from '../services/auditLog';
 
-export default function ClinicalTimeline({ token }) {
+export default function ClinicalTimeline({ token, user }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
@@ -128,6 +129,7 @@ export default function ClinicalTimeline({ token }) {
       };
       const logRef = await addDoc(collection(db, 'patients', id, 'eventLogs'), newLog);
       setEventLogs(prev => [{ id: logRef.id, ...newLog }, ...prev]);
+      writeAuditLog(user, 'ADD_EVENT', 'timeline', id, patient?.name || id, newLog.title);
       setContent('');
       setLogDatetime(formatForDatetimeLocal(new Date()));
     } catch (err) {
@@ -155,6 +157,7 @@ export default function ClinicalTimeline({ token }) {
       };
       await addDoc(collection(db, 'patients', id, 'eventLogs'), newLog);
       setEventLogs(prev => [newLog, ...prev]);
+      writeAuditLog(user, 'CHANGE_STATUS', 'patients', id, patient?.name || id, `เปลี่ยนเป็น: ${newStatus}`);
     } catch (err) {
       console.error(err);
       alert('ไม่สามารถอัปเดตสถานะได้: ' + err.message);

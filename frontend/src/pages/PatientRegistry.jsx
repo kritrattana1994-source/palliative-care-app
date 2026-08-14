@@ -5,6 +5,7 @@ import {
   Download, ChevronDown, RefreshCw, ClipboardList, Stethoscope
 } from 'lucide-react';
 import { db, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from '../services/firebase';
+import { writeAuditLog } from '../services/auditLog';
 
 // Generate a short 6-character alphanumeric token
 const generateToken = () => Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -38,7 +39,7 @@ function StatusBadge({ status }) {
 
 const STAFF_OPTIONS = ['พย.วิกานดา', 'นพ.พีรพล', 'พย.กรรณิการ์'];
 
-export default function PatientRegistry({ token }) {
+export default function PatientRegistry({ token, user }) {
   const [patients, setPatients] = useState([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('ทั้งหมด');
@@ -107,6 +108,7 @@ export default function PatientRegistry({ token }) {
         createdAt: new Date().toISOString()
       });
       showSuccess(`ลงทะเบียนผู้ป่วย ${name} (HN: ${patientId}) เรียบร้อยแล้ว`);
+      writeAuditLog(user, 'ADD_PATIENT', 'patients', patientId, name.trim(), `โรค: ${disease.trim()}`);
       setHn(''); setName(''); setAge(''); setGender('ชาย'); setDisease('');
       setRelativePhone(''); setCaregiverName(''); setAddress('');
       setResponsibleStaff('พย.วิกานดา'); setClinicalNotes(''); setClinicalStatus('Admit');
@@ -138,6 +140,7 @@ export default function PatientRegistry({ token }) {
     try {
       await updateDoc(doc(db, 'patients', editTarget.id), editForm);
       showSuccess(`แก้ไขข้อมูลผู้ป่วย ${editForm.name} เรียบร้อยแล้ว`);
+      writeAuditLog(user, 'EDIT_PATIENT', 'patients', editTarget.id, editForm.name, '');
       setEditTarget(null);
     } catch (err) {
       setError(err.message || 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
@@ -150,6 +153,8 @@ export default function PatientRegistry({ token }) {
   const handleStatusChange = async (patientId, newStatus) => {
     try {
       await updateDoc(doc(db, 'patients', patientId), { clinicalStatus: newStatus });
+      const pt = patients.find(p => p.id === patientId);
+      writeAuditLog(user, 'CHANGE_STATUS', 'patients', patientId, pt?.name || patientId, `เปลี่ยนเป็น: ${newStatus}`);
       showSuccess('อัพเดตสถานะเรียบร้อยแล้ว');
     } catch (err) {
       setError(err.message || 'ไม่สามารถอัพเดตสถานะได้');
@@ -170,6 +175,7 @@ export default function PatientRegistry({ token }) {
       
       const link = `${window.location.origin}/assess/${token}`;
       await navigator.clipboard.writeText(link);
+      writeAuditLog(user, 'GENERATE_LINK', 'patients', p.id, p.name, link);
       showSuccess(`คัดลอกลิงก์สำหรับ ${p.name} แล้ว! (${link})`);
     } catch (err) {
       setError(err.message || 'ไม่สามารถสร้างลิงก์ได้');
@@ -183,6 +189,7 @@ export default function PatientRegistry({ token }) {
     if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลผู้ป่วย "${patientName}" (HN: ${id}) ออกจากระบบ?`)) return;
     try {
       await deleteDoc(doc(db, 'patients', id));
+      writeAuditLog(user, 'DELETE_PATIENT', 'patients', id, patientName, '');
       showSuccess('ลบข้อมูลผู้ป่วยเรียบร้อยแล้ว');
     } catch (err) {
       setError(err.message || 'ไม่สามารถลบข้อมูลผู้ป่วยได้');

@@ -15,6 +15,7 @@ import EquipmentPrintSlip from './pages/EquipmentPrintSlip';
 import EquipmentManagement from './pages/EquipmentManagement';
 import PrintQR from './pages/PrintQR';
 import PatientReport from './pages/PatientReport';
+import AuditLog from './pages/AuditLog';
 import GlobalAssessmentAlert from './components/GlobalAssessmentAlert';
 import { auth, onAuthStateChanged, signOut, db, doc, getDoc } from './services/firebase';
 
@@ -72,7 +73,7 @@ export default function App() {
         <Route path="/login" element={token ? <Navigate to="/dashboard" replace /> : <Login onLoginSuccess={handleLoginSuccess} />} />
         <Route path="/equipments/print/:refId" element={token ? <EquipmentPrintSlip /> : <Navigate to="/login" replace />} />
         <Route path="/patients/report/:id" element={token ? <PatientReport /> : <Navigate to="/login" replace />} />
-        <Route path="/*" element={token ? (<div className="flex h-screen overflow-hidden"><Sidebar user={user} onLogout={handleLogout} /><Routes><Route path="/dashboard" element={<Dashboard token={token} />} /><Route path="/registry" element={<PatientRegistry token={token} />} /><Route path="/timeline/:id" element={<ClinicalTimeline token={token} />} /><Route path="/staff" element={<StaffManagement token={token} user={user} />} /><Route path="/assessment-config" element={<AssessmentConfig token={token} user={user} />} /><Route path="/equipment-config" element={<EquipmentManagement token={token} />} /><Route path="/equipments" element={<EquipmentDashboard token={token} />} /><Route path="/equipments/borrow" element={<EquipmentBorrow token={token} />} /><Route path="/equipments/return" element={<EquipmentReturn token={token} />} /><Route path="*" element={<Navigate to="/dashboard" replace />} /></Routes></div>) : <Navigate to="/login" replace />} />
+        <Route path="/*" element={token ? (<div className="flex h-screen overflow-hidden"><Sidebar user={user} onLogout={handleLogout} /><Routes><Route path="/dashboard" element={<Dashboard token={token} />} /><Route path="/registry" element={<PatientRegistry token={token} user={user} />} /><Route path="/timeline/:id" element={<ClinicalTimeline token={token} user={user} />} /><Route path="/staff" element={<StaffManagement token={token} user={user} />} /><Route path="/assessment-config" element={<AssessmentConfig token={token} user={user} />} /><Route path="/equipment-config" element={<EquipmentManagement token={token} />} /><Route path="/equipments" element={<EquipmentDashboard token={token} />} /><Route path="/equipments/borrow" element={<EquipmentBorrow token={token} user={user} />} /><Route path="/equipments/return" element={<EquipmentReturn token={token} user={user} />} /><Route path="/audit-log" element={<AuditLog token={token} user={user} />} /><Route path="*" element={<Navigate to="/dashboard" replace />} /></Routes></div>) : <Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );
