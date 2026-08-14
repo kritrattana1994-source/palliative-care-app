@@ -10,8 +10,8 @@ service cloud.firestore {
     }
     // คนไข้ส่งแบบประเมินได้, แต่การดูข้อมูลย้อนหลังต้องเป็นเจ้าหน้าที่
     match /assessments/{assessmentId} {
-      allow create: if true;
-      allow read, update, delete: if request.auth != null;
+      allow create, read: if true;
+      allow update, delete: if request.auth != null;
     }
     // เฉพาะเจ้าหน้าที่ (ที่ล็อกอินแล้ว) จัดการข้อมูลพนักงานได้
     // เฉพาะเจ้าหน้าที่ (ที่ล็อกอินแล้ว) จัดการข้อมูลพนักงานได้
