@@ -82,70 +82,80 @@ export default function EquipmentDashboard({ token }) {
   const borrowedCount = equipments.filter(e => e.status === 'ยืม').length;
   const availableCount = totalCount - borrowedCount;
 
-  // Process Borrow Records into Bills (Ref IDs)
+  // Process Borrow Records into Bills (Grouped by Patient)
   const groupedRecords = useMemo(() => {
-      const refMap = {};
+      const ptMap = {};
       records.forEach(r => {
-          const refId = r.refId;
-          if (!refMap[refId]) {
-              let ts = r.timestamp;
-              if (ts?.toDate) ts = ts.toDate();
-              else if (typeof ts === 'number') ts = new Date(ts);
-              else if (ts instanceof Date) ts = ts;
-              
-              refMap[refId] = { 
-                  refId, 
-                  patientId: r.patientId, 
+          const ptId = r.patientId;
+          if (!ptMap[ptId]) {
+              ptMap[ptId] = { 
+                  patientId: ptId, 
                   patientName: r.patientName, 
                   ward: r.ward, 
-                  timestamp: ts, 
+                  timestamp: null, 
                   items: {}, 
-                  itemsRaw: []
+                  itemsRaw: [],
+                  refIds: new Set()
               };
           }
+          
+          let ts = r.timestamp;
+          if (ts?.toDate) ts = ts.toDate();
+          else if (typeof ts === 'number') ts = new Date(ts);
+          else if (ts instanceof Date) ts = ts;
+          
+          if (ts && (!ptMap[ptId].timestamp || ts > ptMap[ptId].timestamp)) {
+              ptMap[ptId].timestamp = ts;
+              ptMap[ptId].ward = r.ward;
+          }
+          
+          if (r.refId) ptMap[ptId].refIds.add(r.refId);
+
           const eqId = r.equipmentId;
           const eqName = r.equipmentName;
           
           if (eqId && eqName) {
-              if (!refMap[refId].items[eqId]) {
-                  refMap[refId].items[eqId] = { name: eqName, count: 0, latestStatus: 'ว่าง' };
+              if (!ptMap[ptId].items[eqId]) {
+                  ptMap[ptId].items[eqId] = { name: eqName, count: 0, latestStatus: 'ว่าง' };
               }
               if (r.type === 'ยืม') {
-                  refMap[refId].items[eqId].count += 1;
-                  refMap[refId].items[eqId].latestStatus = 'ยืม';
-                  refMap[refId].itemsRaw.push(eqName);
+                  ptMap[ptId].items[eqId].count += 1;
+                  ptMap[ptId].items[eqId].latestStatus = 'ยืม';
+                  ptMap[ptId].itemsRaw.push(eqName);
               } else if (r.type === 'คืน') {
-                  refMap[refId].items[eqId].count -= 1;
-                  refMap[refId].items[eqId].latestStatus = 'คืน';
+                  ptMap[ptId].items[eqId].count -= 1;
+                  ptMap[ptId].items[eqId].latestStatus = 'คืน';
               }
           }
       });
       
-      return Object.values(refMap).map(ref => {
+      return Object.values(ptMap).map(pt => {
           let outstandingCount = 0;
           let outstandingNames = [];
-          Object.keys(ref.items).forEach(eqId => {
-              if (ref.items[eqId].count > 0) {
+          Object.keys(pt.items).forEach(eqId => {
+              if (pt.items[eqId].count > 0) {
                   outstandingCount++;
-                  outstandingNames.push(`${ref.items[eqId].name}`);
+                  outstandingNames.push(`${pt.items[eqId].name}`);
               }
           });
-          ref.status = outstandingCount > 0 ? 'ค้างยืม' : 'คืนครบแล้ว';
-          ref.outstandingNames = outstandingNames;
-          return ref;
-      });
+          pt.status = outstandingCount > 0 ? 'ค้างยืม' : 'คืนครบแล้ว';
+          pt.outstandingNames = outstandingNames;
+          pt.refsList = Array.from(pt.refIds).sort((a,b) => b.localeCompare(a));
+          pt.latestRef = pt.refsList[0] || '';
+          return pt;
+      }).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); // Sort newest first
   }, [records]);
 
   // Apply Filters
   const filteredRecords = useMemo(() => {
-      return groupedRecords.filter(ref => {
-          const ptStatus = patients[ref.patientId]?.status || 'Unknown';
+      return groupedRecords.filter(pt => {
+          const ptStatus = patients[pt.patientId]?.status || 'Unknown';
           const searchMatch = !search || 
-                ref.refId.toLowerCase().includes(search.toLowerCase()) || 
-                ref.patientName.toLowerCase().includes(search.toLowerCase()) ||
-                ref.outstandingNames.join(' ').toLowerCase().includes(search.toLowerCase());
-          const statusMatch = filterStatus === 'ALL' || ref.status === filterStatus;
-          const wardMatch = filterWard === 'ALL' || ref.ward === filterWard;
+                pt.latestRef.toLowerCase().includes(search.toLowerCase()) || 
+                pt.patientName.toLowerCase().includes(search.toLowerCase()) ||
+                pt.outstandingNames.join(' ').toLowerCase().includes(search.toLowerCase());
+          const statusMatch = filterStatus === 'ALL' || pt.status === filterStatus;
+          const wardMatch = filterWard === 'ALL' || pt.ward === filterWard;
           const ptStatusMatch = filterPatientStatus === 'ALL' || ptStatus === filterPatientStatus;
 
           return searchMatch && statusMatch && wardMatch && ptStatusMatch;
@@ -308,7 +318,7 @@ export default function EquipmentDashboard({ token }) {
             <table className="w-full text-left">
               <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400 border-b">
                 <tr>
-                  <th className="px-6 py-4">Ref</th>
+                  <th className="px-6 py-4">Ref ล่าสุด</th>
                   <th className="px-6 py-4">คนไข้/วันที่ยืม</th>
                   <th className="px-6 py-4">วอร์ด</th>
                   <th className="px-6 py-4 text-center">สถานะ</th>
@@ -323,8 +333,8 @@ export default function EquipmentDashboard({ token }) {
                       filteredRecords.map(ref => {
                           const isDeath = patients[ref.patientId]?.status === 'เสียชีวิต';
                           return (
-                          <tr key={ref.refId} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-6 py-4 font-bold text-blue-600 font-mono text-xs">{ref.refId}</td>
+                          <tr key={ref.patientId} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-6 py-4 font-bold text-blue-600 font-mono text-xs">{ref.latestRef}</td>
                               <td className="px-6 py-4">
                                   <div className={`font-bold ${isDeath ? 'text-red-600' : 'text-slate-800'}`}>
                                       {ref.patientName} {isDeath && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-md ml-2">เสียชีวิต</span>}
@@ -347,7 +357,7 @@ export default function EquipmentDashboard({ token }) {
                                   )}
                               </td>
                               <td className="px-6 py-4 text-center">
-                                  <button onClick={() => navigate(`/equipments/print/${ref.refId}`)} className="text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 hover:bg-blue-50 p-2 rounded-lg" title="พิมพ์ใบงาน">
+                                  <button onClick={() => navigate(`/equipments/print/${ref.latestRef}`)} className="text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 hover:bg-blue-50 p-2 rounded-lg" title="พิมพ์ใบงานล่าสุด">
                                       <Printer className="w-4 h-4" />
                                   </button>
                               </td>
