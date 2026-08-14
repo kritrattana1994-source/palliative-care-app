@@ -50,7 +50,11 @@ export default function GlobalAssessmentAlert() {
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
           const data = change.doc.data();
-          const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
+          // Firebase Timestamp to milliseconds
+          const createdAt = data.createdAt?.toMillis 
+            ? data.createdAt.toMillis() 
+            : (data.createdAt?.seconds ? data.createdAt.seconds * 1000 : Date.now());
+          
           // Only alert for NEW assessments after the page was loaded
           if (createdAt > pageLoadTime) {
             setNewAssessmentAlert(data);
