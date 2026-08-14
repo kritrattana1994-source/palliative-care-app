@@ -683,9 +683,8 @@ export default function PatientRegistry({ token }) {
           </div>
         </div>
       </div>
-    </div>
 
-    {/* New Assessment Alert Popup */}
+      {/* New Assessment Alert Popup */}
       {newAssessmentAlert && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className={`bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border-4 flex flex-col items-center text-center space-y-4 animate-in fade-in zoom-in duration-300 ${newAssessmentAlert.isCritical ? 'border-red-500' : 'border-blue-500'}`}>
