@@ -24,6 +24,13 @@ export default function ESASForm() {
   const [started, setStarted] = useState(false);
   const [assessmentConfig, setAssessmentConfig] = useState(null);
   const [lastAssessments, setLastAssessments] = useState([]);
+  const [showLineAlert, setShowLineAlert] = useState(false);
+
+  useEffect(() => {
+    if (/Line/i.test(navigator.userAgent)) {
+      setShowLineAlert(true);
+    }
+  }, []);
   
   // Step: 0 to 8 = ESAS symptoms (9 items)
   // Step: 9 = Vital Signs & Other Symptoms
@@ -378,15 +385,10 @@ export default function ESASForm() {
     }
   };
 
-  useEffect(() => {
-    if (!loading && !started && autoPlayVoice && !hasSpokenWelcomeRef.current && !error) {
-      hasSpokenWelcomeRef.current = true;
-      const welcomeMessage = "สวัสดีค่ะ ยินดีต้อนรับสู่ระบบประเมินอาการ แบบประเมินนี้ประกอบด้วย 9 อาการหลัก ได้แก่ 1. อาการปวด, 2. หายใจเหนื่อยหอบ, 3. ความเหนื่อยล้า, 4. ความง่วงซึม, 5. อาการคลื่นไส้, 6. ความอยากอาหาร, 7. ความรู้สึกซึมเศร้า, 8. ความวิตกกังวล, และ 9. สุขภาวะโดยรวม กดปุ่ม เริ่มทำแบบประเมิน เพื่อเริ่มต้นได้เลยค่ะ";
-      setTimeout(() => {
-        speakText(welcomeMessage);
-      }, 1000);
-    }
-  }, [loading, started, autoPlayVoice, error]);
+  const playWelcomeVoice = () => {
+    const welcomeMessage = "สวัสดีค่ะ ยินดีต้อนรับสู่ระบบประเมินอาการ แบบประเมินนี้ประกอบด้วย 9 อาการหลัก ได้แก่ 1. อาการปวด, 2. หายใจเหนื่อยหอบ, 3. ความเหนื่อยล้า, 4. ความง่วงซึม, 5. อาการคลื่นไส้, 6. ความอยากอาหาร, 7. ความรู้สึกซึมเศร้า, 8. ความวิตกกังวล, และ 9. สุขภาวะโดยรวม กดปุ่ม เริ่มทำแบบประเมิน เพื่อเริ่มต้นได้เลยค่ะ";
+    speakText(welcomeMessage);
+  };
 
   const handleStart = () => { 
     setStarted(true); 
@@ -740,11 +742,20 @@ export default function ESASForm() {
 
 
 
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-xs text-amber-800 text-left flex gap-2.5 leading-relaxed shadow-sm">
-              <span className="text-lg">🔊</span>
-              <div>
-                <strong>คำแนะนำเรื่องเสียงพูด:</strong> หากเปิดผ่าน LINE แล้วไม่ได้ยินเสียง กรุณากด <strong>จุด 3 จุด มุมขวาบน → "เปิดด้วยเบราว์เซอร์อื่น" (Chrome/Safari)</strong>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-xs text-amber-800 text-left flex flex-col gap-2.5 leading-relaxed shadow-sm w-full">
+              <div className="flex gap-2.5">
+                <span className="text-lg">🔊</span>
+                <div>
+                  <strong>คำแนะนำเรื่องเสียงพูด:</strong> หากเปิดผ่าน LINE แล้วไม่ได้ยินเสียง กรุณากด <strong>จุด 3 จุด มุมขวาบน → "เปิดด้วยเบราว์เซอร์อื่น" (Chrome/Safari)</strong>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={playWelcomeVoice}
+                className="mt-1 py-2 px-3 bg-white border border-amber-300 rounded-lg text-amber-700 font-bold flex items-center justify-center gap-2 hover:bg-amber-100 transition-colors w-full"
+              >
+                <Volume2 className="w-4 h-4" /> ฟังเสียงแนะนำการประเมิน
+              </button>
             </div>
 
             {/* Last 2 Assessments History */}
@@ -1128,6 +1139,29 @@ export default function ESASForm() {
         )}
 
       </div>
+      {/* LINE Browser Alert Modal */}
+      {showLineAlert && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center space-y-5 animate-in fade-in zoom-in duration-300">
+            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-slate-800">เปิดผ่าน LINE อาจไม่มีเสียง</h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                เบราว์เซอร์ของแอป LINE มักจะปิดกั้นระบบเสียงพูดอัตโนมัติ เพื่อการใช้งานที่สมบูรณ์แบบ กรุณากดที่ <strong>จุด 3 จุด มุมขวาบน</strong> แล้วเลือก <strong className="text-emerald-600">"เปิดด้วยเบราว์เซอร์อื่น"</strong> (เช่น Chrome หรือ Safari)
+              </p>
+            </div>
+            <button
+              onClick={() => setShowLineAlert(false)}
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+            >
+              รับทราบ ดำเนินการต่อ
+            </button>
+          </div>
+        </div>
+      )}
+
       <audio ref={audioRef} className="hidden" referrerPolicy="no-referrer" />
     </div>
   );
