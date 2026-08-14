@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #fff1f2; margin: 0; }
+    .hidden-app { display: none !important; }
+    #loader { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #ef4444; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .original-photo { width: 90px; height: 90px; object-fit: cover; border-radius: 12px; border: 3px solid #ef4444; cursor: pointer; background: #f1f1f1; transition: transform 0.2s; }
+    .day-badge { background-color: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 10px; border: 1px solid #fecaca; }
+    .input-field { border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; width: 100%; outline: none; transition: all 0.2s; background: white; }
+  </style>
+</head>
+<body>
+
+  <!-- 🔒 ส่วนล็อกอิน -->
+  <div id="login-section" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border-t-[12px] border-red-500 max-w-sm w-full text-center">
+      <div class="text-6xl mb-6">🔑</div>
+      <h2 class="text-2xl font-black text-slate-800 mb-1 tracking-tighter font-sans">กรุณายืนยันตัวตน</h2>
+      <p class="text-xs text-slate-400 mb-8 uppercase tracking-widest font-bold font-sans">HHC Return Section Access</p>
+      <div id="error-msg" class="hidden mb-4 p-3 bg-red-50 text-red-500 text-xs font-bold rounded-xl animate-pulse font-sans">❌ รหัสผ่านไม่ถูกต้อง!</div>
+      <input type="password" id="pass-field" placeholder="••••••" class="w-full text-center text-4xl tracking-[0.4em] p-4 border-2 border-red-50 rounded-2xl mb-6 outline-none focus:border-red-500 bg-slate-50 shadow-inner">
+      <button onclick="attemptLogin()" class="w-full bg-red-500 hover:bg-red-600 text-white font-black py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-lg font-bold font-sans">เข้าใช้งาน</button>
+      <div class="mt-8 pt-6 border-t border-slate-100"><a href="<?= scriptUrl ?>?p=borrow" target="_top" class="text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors underline decoration-dotted font-sans">← กลับหน้ายืมเครื่องมือแพทย์</a></div>
+    </div>
+  </div>
+
+  <div id="loader"><div class="spinner mb-3"></div><p id="l-text" class="text-red-600 font-bold text-center font-sans">กำลังดำเนินการ...</p></div>
+
+  <!-- 🖥️ ส่วนเนื้อหาหลัก -->
+  <div id="main-app" class="hidden-app p-2 md:p-6">
+    <div class="max-w-4xl mx-auto mb-6 flex flex-wrap justify-center gap-3">
+      <a href="<?= scriptUrl ?>?p=borrow" target="_top" class="bg-white text-blue-600 border border-blue-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm transition-all hover:bg-blue-50 font-sans">หน้ายืมเครื่อง</a>
+      <button class="bg-red-600 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm text-center font-sans">หน้าคืน/แก้ไข <br><span class="text-[9px]">(ต้องมีรหัสผ่านเข้าเมนูนี้)</span></button>
+      <a href="<?= scriptUrl ?>?p=patient_manage" target="_top" class="bg-white text-purple-600 border border-purple-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm transition-all hover:bg-purple-50 text-center font-sans">จัดการคนไข้ <br><span class="text-[9px]">(ต้องมีรหัสผ่านเข้าเมนูนี้)</span></a>
+      <a href="<?= scriptUrl ?>?p=dashboard" target="_top" class="bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm transition-all hover:bg-slate-50 font-sans">แดชบอร์ด/พิมพ์ใบงาน</a>
+    </div>
+
+    <div class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border-t-8 border-red-500 p-6">
+      <div class="text-center mb-6"><h1 class="text-2xl font-bold text-slate-800 uppercase tracking-tighter font-sans">🔄 รับคืน หรือ เพิ่มเครื่องมือในใบเดิม</h1></div>
+      <form onsubmit="submitForm(event)">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div><label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-widest font-sans">เลือกเลขที่ใบงาน *</label><select id="ref-select" onchange="loadRef(this.value)" required class="w-full p-3 border rounded-xl font-bold text-red-600 bg-white outline-none focus:ring-2 focus:ring-red-100 shadow-sm font-mono"></select></div>
+          <div><label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-widest font-sans">เจ้าหน้าที่ผู้รับคืน *</label><input type="text" id="staff-name" required class="input-field shadow-sm" placeholder="ระบุชื่อ"></div>
+        </div>
+        <div id="info-box" class="hidden mb-6 p-5 bg-red-50 rounded-2xl border border-red-100 shadow-sm animate-in fade-in duration-300 font-sans">
+          <div class="flex items-start gap-4"><div class="bg-white p-3 rounded-full text-2xl shadow-sm shrink-0 border border-red-50">👤</div>
+            <div class="flex-1"><div class="flex justify-between items-start"><p id="info-name" class="font-bold text-lg text-red-800"></p><span id="info-ward" class="bg-red-200 text-red-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"></span></div>
+               <p id="info-phone" class="text-xs text-slate-600 font-bold mt-1"></p><p id="info-addr" class="text-xs text-slate-400 mt-1 leading-relaxed"></p>
+               <div class="mt-4 p-3 bg-white/50 rounded-xl border border-red-100 grid grid-cols-2 gap-4 items-center">
+                  <div><label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">อัปเดตสถานะคนไข้</label>
+                    <select id="update-status" class="w-full mt-1 p-1 border border-red-200 rounded-lg text-xs font-bold text-red-600 outline-none bg-white font-sans">
+                      <option value="Admit">Admit</option><option value="D/C">D/C</option><option value="เสียชีวิต">เสียชีวิต</option>
+                    </select>
+                  </div>
+                  <div class="border-l border-red-100 pl-4"><p class="text-[9px] text-slate-400 uppercase font-black tracking-tighter">ญาติผู้ยืม</p><p id="info-rel" class="text-xs font-bold text-red-700"></p></div>
+               </div>
+            </div>
+          </div>
+          <input type="hidden" id="p-val"><input type="hidden" id="w-val">
+        </div>
+        <div class="flex justify-between items-center mb-4 border-b pb-2"><h3 class="font-bold text-slate-700 uppercase text-xs tracking-wider font-sans">รายการเครื่องมือในใบงานนี้</h3><button type="button" onclick="addItem('ยืม', '', '', '', '', '')" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold shadow-md hover:bg-blue-700 transition-all font-sans">+ ยืมเพิ่มในใบเดิม</button></div>
+        <div id="container" class="space-y-4 mb-8"><div id="empty-msg" class="py-10 text-center text-slate-300 italic font-medium border-2 border-dashed border-slate-50 rounded-2xl bg-slate-50/20 font-sans">กรุณาเลือกเลขที่ใบงาน...</div></div>
+        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-2xl shadow-xl text-lg active:scale-95 transition-all font-sans">บันทึกข้อมูลทั้งหมด</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = '<?= scriptUrl ?>'; const AUTH_KEY = 'hhc_final_auth_session';
+    function attemptLogin() { const val = document.getElementById('pass-field').value; if (val === '999999') { const expiry = new Date().getTime() + (20 * 60 * 1000); localStorage.setItem(AUTH_KEY, expiry.toString()); showApp(); } else { document.getElementById('error-msg').classList.remove('hidden'); setTimeout(()=> document.getElementById('error-msg').classList.add('hidden'), 3000); } }
+    function showApp() { document.getElementById('login-section').style.display = 'none'; document.getElementById('main-app').classList.remove('hidden-app'); init(); }
+    window.onload = () => { const session = localStorage.getItem(AUTH_KEY); const now = new Date().getTime(); if (session && now < parseInt(session)) { showApp(); } else { document.getElementById('login-section').style.display = 'flex'; } };
+    let allE = []; let availE = [];
+    function showLoader(s, t="กำลังดำเนินการ...") { document.getElementById('loader').style.display = s ? 'flex' : 'none'; document.getElementById('l-text').innerText = t; if(s) setTimeout(()=>showLoader(false), 15000); }
+    function init() { showLoader(true, "โหลดข้อมูลเบื้องต้น..."); google.script.run.withSuccessHandler(d => { showLoader(false); if(d && d.length) { const sel = document.getElementById('ref-select'); sel.innerHTML = '<option value="" disabled selected>-- เลือกเลขที่ใบงาน --</option>'; d.forEach(r => sel.innerHTML += `<option value="${r}">${r}</option>`); } else { document.getElementById('ref-select').innerHTML = '<option value="" disabled>-- ไม่พบรายการค้าง --</option>'; } }).getActiveRefIds(); google.script.run.withSuccessHandler(d => { allE = d.allEquips; availE = d.availableEquips; }).getDropdownData(); }
+    function loadRef(id) { if(!id) return; showLoader(true); google.script.run.withSuccessHandler(d => { showLoader(false); document.getElementById('empty-msg').style.display = 'none'; document.getElementById('info-box').classList.remove('hidden'); document.getElementById('info-name').innerText = d.patient; document.getElementById('info-ward').innerText = d.ward || "-"; document.getElementById('info-phone').innerText = "📞 เบอร์โทร: " + (d.phone || '-'); document.getElementById('info-addr').innerText = "🏠 ที่อยู่: " + (d.address || '-'); document.getElementById('info-rel').innerText = d.relative || "-"; document.getElementById('update-status').value = d.status || "Admit"; document.getElementById('p-val').value = d.patient; document.getElementById('w-val').value = d.ward; const container = document.getElementById('container'); container.innerHTML = ''; if(d.items && d.items.length) { d.items.forEach(i => addItem('คืน', i.equipment, i.note, i.photo, i.date, i.deposit)); } }).withFailureHandler(err => { showLoader(false); Swal.fire('Error', err.message, 'error'); }).getRefDetails(id); }
+    
+    // 🌟 ระบบข้ามการทำรายการ หากเอาติ๊กถูกออก
+    function toggleCard(cb) {
+      const card = cb.closest('.item-card');
+      const text = card.querySelector('.toggle-text');
+      const isReturn = card.querySelector('.sel-type').value === 'คืน';
+      if(cb.checked) {
+        card.classList.remove('opacity-40', 'grayscale');
+        text.innerText = isReturn ? 'คืนเครื่องนี้' : 'ยืนยันทำรายการ';
+      } else {
+        card.classList.add('opacity-40', 'grayscale');
+        text.innerText = 'ข้ามรายการนี้';
+      }
+    }
+
+    function addItem(type, defEq, defNote, photoUrl, bDate, defDep) {
+      const id = "item-" + Math.random().toString(36).substr(2, 9); const isReturn = type === 'คืน';
+      let opts = `<option value="" disabled ${!defEq?'selected':''}>-- เลือกเครื่องมือ --</option>`; (isReturn ? allE : availE).forEach(e => opts += `<option value="${e}" ${e===defEq?'selected':''}>${e}</option>`);
+      const h = `<div id="${id}" class="item-card ${isReturn ? 'bg-red-50 border-red-100' : 'bg-blue-50 border-blue-100'} p-4 rounded-2xl border-2 relative shadow-md mt-4 transition-all duration-300">
+          
+          <div class="absolute top-3 right-3 flex items-center gap-2 z-10">
+            <label class="flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50 transition-all">
+              <input type="checkbox" class="item-active-cb w-4 h-4 cursor-pointer accent-blue-600" checked onchange="toggleCard(this)">
+              <span class="text-[10px] font-black text-slate-700 toggle-text">${isReturn ? 'คืนเครื่องนี้' : 'ยืนยันทำรายการ'}</span>
+            </label>
+            <button type="button" onclick="document.getElementById('${id}').remove()" class="text-slate-400 hover:text-red-500 text-lg font-bold bg-white rounded-lg px-2 py-0.5 border border-slate-200 shadow-sm">&times;</button>
+          </div>
+
+          <div class="flex items-start gap-4 mb-3 mt-10">${isReturn && photoUrl ? `<div class="shrink-0 text-center"><p class="text-[8px] font-black text-slate-400 mb-1 uppercase tracking-widest font-sans">รูปยืม</p><img src="${photoUrl}" class="original-photo border shadow-sm" onclick="window.open('${photoUrl}', '_blank')"></div>` : `<div class="shrink-0 w-16 h-16 bg-slate-100 rounded-lg border border-dashed flex items-center justify-center text-[8px] text-slate-300 font-bold uppercase p-2 text-center leading-tight">ใหม่</div>`}
+            <div class="flex-1 font-sans"><div class="flex items-center gap-2 mb-2"><span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${isReturn ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}">${isReturn ? 'คืนเครื่องเดิม' : 'ยืมเพิ่ม'}</span>
+                <input type="hidden" class="sel-type" value="${isReturn ? 'คืน' : 'ยืม'}"></div>
+              <select class="sel-eq w-full p-2 border rounded-xl font-bold bg-white text-slate-700 outline-none shadow-sm shadow-inner" required ${isReturn ? 'disabled' : ''}>${opts}</select>${isReturn ? `<input type="hidden" class="sel-eq-hidden" value="${defEq}">` : ''}
+            </div></div>
+          <div class="grid grid-cols-2 gap-3 mt-3 font-sans"><div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">มัดจำ / สถานะคืน</label>
+               ${isReturn ? `<select class="sel-cond w-full p-2 border rounded-xl text-xs bg-white font-bold text-slate-600 outline-none shadow-sm"><option value="ปกติ">ปกติ</option><option value="ชำรุด">ชำรุด</option><option value="สูญหาย">หาย</option></select>` : `<input type="number" class="inp-dep w-full p-2 border rounded-xl text-center font-bold text-blue-600 shadow-sm" value="${defDep||0}">`}</div>
+             <div class="flex flex-col justify-end"><label class="cursor-pointer bg-white border border-slate-200 p-2 rounded-xl text-center text-[10px] font-black text-slate-600 hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-1 font-bold">📸 ถ่ายรูป/แนบไฟล์ *<input type="file" accept="image/*" capture="environment" class="hidden" onchange="procImg(this)"></label></div></div>
+          <img src="" class="img-preview hidden w-full h-32 object-cover rounded-xl mt-3 border shadow-sm"><textarea class="base64-store hidden"></textarea>
+          <input type="text" class="inp-note w-full p-2 border rounded-xl text-xs mt-3 outline-none shadow-sm bg-white shadow-inner font-sans" value="${defNote}" placeholder="รหัสเครื่อง / หมายเหตุ"></div>`;
+      document.getElementById('container').insertAdjacentHTML('beforeend', h);
+    }
+    
+    function procImg(input) { const file = input.files[0]; if(!file) return; const item = input.closest('.item-card'); showLoader(true, "กำลังประมวลผลรูปถ่าย..."); const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; if (w > 800) { h *= 800/w; w = 800; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); const b64 = canvas.toDataURL('image/jpeg', 0.6); item.querySelector('.base64-store').value = b64; item.querySelector('.img-preview').src = b64; item.querySelector('.img-preview').classList.remove('hidden'); showLoader(false); }; img.src = e.target.result; }; reader.readAsDataURL(file); }
+    
+    function submitForm(e) { 
+      e.preventDefault(); 
+      const items = []; 
+      const cards = document.querySelectorAll('.item-card'); 
+      if(!cards.length) return Swal.fire('เตือน', 'กรุณาระบุรายการเครื่องมือ', 'warning'); 
+      
+      let valid = true; 
+      let activeCount = 0; // เช็คว่ามีรายการที่ถูกเลือกกี่รายการ
+
+      cards.forEach(c => { 
+        const isActive = c.querySelector('.item-active-cb');
+        if (isActive && !isActive.checked) return; // 🌟 ข้ามการจัดเก็บข้อมูลหากผู้ใช้ไม่ได้ติ๊กเลือก
+        
+        activeCount++;
+        const type = c.querySelector('.sel-type').value; 
+        const b64 = c.querySelector('.base64-store').value; 
+        if(!b64) valid = false; // บังคับถ่ายรูปเฉพาะรายการที่ติ๊กเลือกเท่านั้น
+        
+        const equip = type === 'คืน' ? c.querySelector('.sel-eq-hidden').value : c.querySelector('.sel-eq').value; 
+        items.push({ type, equipment: equip, note: c.querySelector('.inp-note').value, condition: type === 'คืน' ? c.querySelector('.sel-cond').value : 'ปกติ', deposit: type === 'ยืม' ? c.querySelector('.inp-dep').value : 0, imageRaw: b64 }); 
+      }); 
+
+      if(activeCount === 0) return Swal.fire('เตือน!', 'กรุณาติ๊กเลือกอย่างน้อย 1 รายการเพื่อดำเนินการ', 'warning');
+      if(!valid) return Swal.fire('ถ่ายรูป!', 'กรุณาถ่ายรูปหรือแนบไฟล์ประกอบสำหรับรายการที่ติ๊กเลือกให้ครบถ้วน', 'warning'); 
+      
+      showLoader(true, "กำลังบันทึกข้อมูล..."); 
+      google.script.run.withSuccessHandler(res => { 
+        showLoader(false); 
+        Swal.fire({ title: 'สำเร็จ!', text: res, icon: 'success', confirmButtonColor: '#ef4444' }).then(() => { 
+          window.top.location.href = SCRIPT_URL + "?p=return";
+        }); 
+      }).withFailureHandler(err => { 
+        showLoader(false); Swal.fire('Error', err.message, 'error'); 
+      }).saveTransaction({ 
+        refId: document.getElementById('ref-select').value, 
+        staff: document.getElementById('staff-name').value, 
+        ward: document.getElementById('w-val').value, 
+        patient: document.getElementById('p-val').value, 
+        items: items, 
+        newStatus: document.getElementById('update-status').value 
+      }); 
+    }
+  </script>
+</body>
+</html>

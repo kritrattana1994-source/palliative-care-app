@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- 🌟 ไลบรารีกราฟ Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; margin: 0; }
+    #loader { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .status-badge { font-size: 9px; padding: 2px 6px; border-radius: 6px; font-weight: bold; border-width: 1px; }
+    .day-count { font-size: 9px; color: #ef4444; font-weight: 800; background: #fee2e2; padding: 1px 4px; border-radius: 4px; margin-left: 4px; border: 1px solid #fecaca; }
+    .search-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+  </style>
+</head>
+<body class="p-2 md:p-8">
+  <div id="loader"><div class="spinner mb-3"></div><p id="l-text" class="text-blue-600 font-bold text-center">กำลังดึงข้อมูล...</p></div>
+  <div class="max-w-7xl mx-auto">
+    
+    <!-- เมนูนำทาง -->
+    <div class="mb-8 flex flex-wrap justify-center gap-3">
+      <a href="<?= scriptUrl ?>?p=borrow" target="_top" class="bg-white text-blue-600 border border-blue-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm transition-all hover:bg-blue-50">หน้ายืมเครื่อง</a>
+      <a href="<?= scriptUrl ?>?p=return" target="_top" class="bg-white text-red-600 border border-red-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm text-center">หน้าคืน/แก้ไข <br><span class="text-[9px]">(ต้องมีรหัสผ่านเข้าเมนูนี้)</span></a>
+      <a href="<?= scriptUrl ?>?p=patient_manage" target="_top" class="bg-white text-purple-600 border border-purple-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm text-center">จัดการคนไข้ <br><span class="text-[9px]">(ต้องมีรหัสผ่านเข้าเมนูนี้)</span></a>
+      <button class="bg-slate-800 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm">📊 แดชบอร์ด/พิมพ์ใบงาน</button>
+    </div>
+
+    <!-- สถิติ -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 text-center">
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"><p class="text-xs text-slate-400 font-bold uppercase">เครื่องมือทั้งหมด</p><h2 id="stat-total" class="text-3xl font-black text-slate-800">-</h2></div>
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"><p class="text-xs text-green-500 font-bold uppercase">ว่างพร้อมยืม</p><h2 id="stat-avail" class="text-3xl font-black text-green-600">-</h2></div>
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"><p class="text-xs text-red-500 font-bold uppercase">ยืมไปแล้ว</p><h2 id="stat-borrowed" class="text-3xl font-black text-red-600">-</h2></div>
+    </div>
+
+    <!-- ส่วนแสดงกราฟ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+        <h3 class="font-bold text-slate-700 text-sm mb-4">📊 สถานะเครื่องมือปัจจุบัน (แยกตามหมวดหมู่)</h3>
+        <canvas id="chartCurrentStatus" height="200"></canvas>
+      </div>
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative">
+        <h3 class="font-bold text-slate-700 text-sm mb-4">📈 ยอดการยืม 6 เดือนย้อนหลัง</h3>
+        <canvas id="chartTrend" height="200"></canvas>
+        <p id="history-warning" class="text-[10px] text-orange-500 italic mt-4 text-center hidden font-bold">⚠️ ขณะนี้ยังไม่มีประวัติการยืม หรือกราฟไม่สามารถแสดงผลได้</p>
+      </div>
+    </div>
+
+    <!-- 🌟 ส่วนกรองข้อมูล (เพิ่มตัวกรอง Ward และ สถานะคนไข้) -->
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ค้นหา (Ref / PHON / ชื่อ)</label>
+          <input type="text" id="search-query" oninput="handleFilter()" placeholder="พิมพ์ข้อความค้นหา..." class="w-full p-3 border-2 border-slate-50 rounded-2xl bg-slate-50 search-input outline-none font-bold text-slate-700 shadow-inner text-sm">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">สถานะใบงาน</label>
+          <select id="status-filter" onchange="handleFilter()" class="w-full p-3 border-2 border-slate-50 rounded-2xl bg-slate-50 outline-none font-bold text-slate-600 bg-white text-sm">
+            <option value="ALL">ทุกสถานะใบงาน</option>
+            <option value="ค้างยืม">ค้างยืม</option>
+            <option value="คืนครบแล้ว">คืนครบแล้ว</option>
+            <option value="รอเพิ่มรายการ">รอเพิ่มรายการ</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">วอร์ด (Ward)</label>
+          <select id="ward-filter" onchange="handleFilter()" class="w-full p-3 border-2 border-slate-50 rounded-2xl bg-slate-50 outline-none font-bold text-slate-600 bg-white text-sm">
+            <option value="ALL">ทุก Ward</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">สถานะคนไข้</label>
+          <select id="patient-status-filter" onchange="handleFilter()" class="w-full p-3 border-2 border-slate-50 rounded-2xl bg-slate-50 outline-none font-bold text-slate-600 bg-white text-sm">
+            <option value="ALL">ทุกสถานะคนไข้</option>
+            <option value="Admit">Admit</option>
+            <option value="D/C">D/C</option>
+            <option value="เสียชีวิต">เสียชีวิต</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ตารางแสดงผล -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+      <div class="bg-slate-50 p-6 border-b flex justify-between items-center"><h3 class="font-bold text-slate-700 uppercase text-xs">📋 ประวัติใบงานทั้งหมด</h3><button onclick="loadData()" class="text-blue-600 text-xs font-bold hover:underline">🔄 รีเฟรชข้อมูล</button></div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead class="bg-slate-50 text-[10px] uppercase font-bold text-slate-400 border-b">
+            <tr>
+              <th class="px-6 py-4">Ref</th>
+              <th class="px-6 py-4">คนไข้/วันที่ยืม</th>
+              <th class="px-6 py-4 text-center">สถานะ</th>
+              <th class="px-6 py-4">รายการค้าง / รหัส PHON</th>
+              <th class="px-6 py-4 text-center">ตัวเลือก</th>
+            </tr>
+          </thead>
+          <tbody id="table-body" class="text-sm"></tbody>
+        </table>
+        <div id="no-data" class="hidden p-10 text-center text-slate-300 italic font-medium">ไม่พบข้อมูลในระบบ หรือไม่มีข้อมูลที่ตรงกับตัวกรอง</div>
+      </div>
+    </div>
+    <div id="pagination-container" class="flex justify-center items-center gap-2 mb-10 mt-4"></div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = '<?= scriptUrl ?>'; 
+    let allDataRaw = []; 
+    let filteredData = []; 
+    let currentPage = 1; 
+    const itemsPerPage = 20;
+    let patientStatusMap = {}; // 🌟 เก็บข้อมูลสถานะคนไข้
+    
+    // หมวดหมู่ที่ต้องการแยกตามกราฟ
+    const chartCategories = ['ที่นอนลม', 'เครื่องพ่นยา', 'เครื่องผลิตออกซิเจน', 'Suction', 'Syringe driver'];
+    let chart1, chart2; 
+
+    function showLoader(s) { document.getElementById('loader').style.display = s ? 'flex' : 'none'; }
+    
+    // โหลดข้อมูลเมื่อหน้าเว็บพร้อม
+    window.addEventListener('DOMContentLoaded', () => { 
+      loadData(); 
+      loadPatientStatuses(); // 🌟 โหลดสถานะคนไข้เสริมเข้ามา
+    });
+    
+    // 🌟 ดึงสถานะคนไข้จากชีททะเบียนมาเก็บไว้
+    function loadPatientStatuses() {
+      google.script.run.withSuccessHandler(data => {
+        if (data && Array.isArray(data)) {
+          data.forEach(p => {
+            patientStatusMap[String(p.hn).trim()] = p.status;
+          });
+          handleFilter(); // ทำการกรองซ้ำอีกรอบหลังจากได้สถานะคนไข้ครบแล้ว
+        }
+      }).getAllPatientsForManage();
+    }
+
+    // ฟังก์ชันสร้างตัวเลือก Ward อัตโนมัติจากข้อมูลที่มี
+    function populateWardFilter() {
+      const wards = [...new Set(allDataRaw.map(item => item.ward))].filter(Boolean).sort();
+      const wardSel = document.getElementById('ward-filter');
+      const currentVal = wardSel.value;
+      wardSel.innerHTML = '<option value="ALL">ทุก Ward</option>';
+      wards.forEach(w => wardSel.innerHTML += `<option value="${w}">${w}</option>`);
+      wardSel.value = currentVal || 'ALL';
+    }
+
+    function calculateDays(dStr) { 
+      if (!dStr || dStr === "N/A" || dStr === "-") return ""; 
+      try { 
+        const p = dStr.split(' '); 
+        if (p.length < 1) return "";
+        const dp = p[0].split('/'); 
+        if (dp.length !== 3) return "";
+        const tp = p.length > 1 ? p[1].split(':') : [0,0]; 
+        
+        let year = parseInt(dp[2], 10);
+        if (year > 2500) year -= 543;
+        
+        const itemDate = new Date(year, parseInt(dp[1], 10)-1, parseInt(dp[0], 10), parseInt(tp[0]||0, 10), parseInt(tp[1]||0, 10)); 
+        if (isNaN(itemDate.getTime())) return ""; 
+
+        const now = new Date();
+        const diff = now - itemDate; 
+        if (diff < 0) return "0 วัน";
+        return Math.floor(diff / 86400000) + " วัน"; 
+      } catch(e) { return ""; } 
+    }
+    
+    function loadData() {
+      showLoader(true); 
+      google.script.run.withSuccessHandler(data => {
+        try {
+          showLoader(false); 
+          if(!data) {
+             Swal.fire('แจ้งเตือน', 'ไม่พบข้อมูลตอบกลับจากระบบฐานข้อมูล', 'warning');
+             return;
+          }
+
+          // 1. อัปเดตสถิติยอดรวม
+          if(data.summary) {
+            document.getElementById('stat-total').innerText = data.summary.total !== undefined ? data.summary.total : 0; 
+            document.getElementById('stat-avail').innerText = data.summary.available !== undefined ? data.summary.available : 0; 
+            document.getElementById('stat-borrowed').innerText = data.summary.borrowed !== undefined ? data.summary.borrowed : 0;
+          }
+
+          // 2. ข้อมูลตาราง (รับมือจาก Code.gs ทุกรูปแบบ)
+          if(data.allTransactions) {
+             allDataRaw = data.allTransactions; 
+          } else if(data.activeBorrowings) {
+             allDataRaw = data.activeBorrowings.map(row => {
+                return {
+                   refId: row.refId || '-', patient: row.patient || '-', ward: row.ward || '-',
+                   borrowDate: row.borrowDate || row.date || '-', status: 'ค้างยืม',
+                   items: (row.items || []).map(i => {
+                      if (typeof i === 'object') return i;
+                      return { name: String(i), date: row.borrowDate || row.date || '-', note: '-' };
+                   })
+                };
+             });
+          } else {
+             allDataRaw = [];
+          }
+          
+          populateWardFilter(); // 🌟 อัปเดต Dropdown Ward
+          handleFilter();
+          
+          // 3. วาดกราฟ 
+          setTimeout(() => {
+            try {
+              if (typeof Chart === 'undefined') return;
+              let inventoryData = data.inventory || data.allEquips || [];
+              let historyData = data.historyLogs || []; 
+              renderCharts(inventoryData, historyData);
+            } catch(chartErr) { console.error("Chart Error:", chartErr); }
+          }, 100);
+
+        } catch (clientErr) {
+          showLoader(false);
+          Swal.fire('ข้อผิดพลาดการแสดงผล', clientErr.message, 'error');
+        }
+      }).withFailureHandler(err => { 
+        showLoader(false); 
+        Swal.fire('ข้อผิดพลาดจาก Server', err.message, 'error'); 
+      }).getDashboardData();
+    }
+
+    function renderCharts(inventory, history) {
+        let currentData = {};
+        chartCategories.forEach(c => currentData[c] = { avail: 0, borrowed: 0 });
+
+        if(inventory && inventory.length > 0) {
+            inventory.forEach(item => {
+                let eqName = item.length > 0 ? String(item[0] || "") : "";
+                let eqStatus = item.length > 1 ? String(item[1] || "").trim() : "";
+                for(let cat of chartCategories) {
+                    if(eqName.includes(cat)) {
+                        if(eqStatus === "ยืม") currentData[cat].borrowed++;
+                        else currentData[cat].avail++;
+                        break;
+                    }
+                }
+            });
+        }
+
+        const ctx1 = document.getElementById('chartCurrentStatus').getContext('2d');
+        if(chart1) chart1.destroy(); 
+        chart1 = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: chartCategories,
+                datasets: [
+                    { label: 'ว่างพร้อมยืม', data: chartCategories.map(c => currentData[c].avail), backgroundColor: '#22c55e', borderRadius: 4 },
+                    { label: 'ถูกยืมไปแล้ว', data: chartCategories.map(c => currentData[c].borrowed), backgroundColor: '#ef4444', borderRadius: 4 }
+                ]
+            },
+            options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { legend: { position: 'bottom' } } }
+        });
+
+        const monthNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+        let last6Months = [];
+        let d = new Date();
+        for (let i = 5; i >= 0; i--) {
+            let tempD = new Date(d.getFullYear(), d.getMonth() - i, 1);
+            last6Months.push({ label: `${monthNames[tempD.getMonth()]} ${(tempD.getFullYear()+543).toString().slice(-2)}`, month: tempD.getMonth(), year: tempD.getFullYear() });
+        }
+
+        let trendData = {};
+        chartCategories.forEach(c => trendData[c] = [0, 0, 0, 0, 0, 0]);
+
+        if (history && history.length > 0) {
+            document.getElementById('history-warning').classList.add('hidden');
+            history.forEach(log => {
+                const dateVal = log[0]; 
+                const type = log[2];    
+                const eqName = log[6] ? String(log[6]) : ""; 
+
+                if (type === 'ยืม' && dateVal) {
+                    let logDate;
+                    if (typeof dateVal === 'number') {
+                        logDate = new Date(dateVal); 
+                    } else if (dateVal instanceof Date) { 
+                        logDate = dateVal; 
+                    } else {
+                        let parts = String(dateVal).split(' ')[0].split('/');
+                        if(parts.length === 3) {
+                           let y = parseInt(parts[2], 10);
+                           if (y > 2500) y -= 543;
+                           logDate = new Date(y, parseInt(parts[1], 10)-1, parseInt(parts[0], 10));
+                        } else {
+                           logDate = new Date(dateVal);
+                        }
+                    }
+
+                    if (logDate && !isNaN(logDate)) {
+                        for (let i = 0; i < 6; i++) {
+                            if (logDate.getMonth() === last6Months[i].month && logDate.getFullYear() === last6Months[i].year) {
+                                for (let cat of chartCategories) {
+                                    if (eqName.includes(cat)) { trendData[cat][i]++; break; }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('history-warning').classList.remove('hidden');
+        }
+
+        const ctx2 = document.getElementById('chartTrend').getContext('2d');
+        const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+        let datasetsTrend = chartCategories.map((cat, idx) => {
+            return { label: cat, data: trendData[cat], backgroundColor: colors[idx], borderRadius: 4 }
+        });
+
+        if(chart2) chart2.destroy();
+        chart2 = new Chart(ctx2, {
+            type: 'bar', 
+            data: { labels: last6Months.map(m => m.label), datasets: datasetsTrend },
+            options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    // 🌟 ระบบจัดการตัวกรอง (เพิ่ม Ward และ Patient Status)
+    function handleFilter() {
+      try {
+        const query = document.getElementById('search-query').value.toLowerCase().trim();
+        const statusFilter = document.getElementById('status-filter').value;
+        const wardFilter = document.getElementById('ward-filter').value;
+        const patStatusFilter = document.getElementById('patient-status-filter').value;
+
+        filteredData = allDataRaw.filter(row => {
+          // 1. กรองสถานะใบงาน
+          const matchStatus = (statusFilter === "ALL") || (row.status === statusFilter);
+          
+          // 2. กรองการค้นหา Text
+          const refStr = String(row.refId || '').toLowerCase();
+          const patStr = String(row.patient || '').toLowerCase();
+          const itemsMatch = (row.items || []).some(i => String(i.name || '').toLowerCase().includes(query) || String(i.note || '').toLowerCase().includes(query));
+          const matchText = refStr.includes(query) || patStr.includes(query) || itemsMatch;
+
+          // 3. กรอง Ward
+          const matchWard = (wardFilter === "ALL") || (row.ward === wardFilter);
+
+          // 4. กรองสถานะคนไข้ (Admit, D/C, เสียชีวิต)
+          let matchPatStatus = true;
+          if (patStatusFilter !== "ALL") {
+             let hn = patStr.split('-')[0].trim();
+             let pStatus = patientStatusMap[hn] || "Admit"; // นำสถานะคนไข้ที่ดึงมาตรวจสอบ
+             matchPatStatus = (pStatus === patStatusFilter);
+          }
+
+          return matchStatus && matchText && matchWard && matchPatStatus;
+        });
+        
+        currentPage = 1; 
+        renderTable();
+      } catch (err) { console.error("Filter Error:", err); }
+    }
+    
+    function renderTable() {
+      try {
+        const tbody = document.getElementById('table-body'); 
+        const pagin = document.getElementById('pagination-container'); 
+        tbody.innerHTML = ''; 
+        pagin.innerHTML = '';
+
+        if(!filteredData || !filteredData.length) { 
+          document.getElementById('no-data').classList.remove('hidden'); 
+          return; 
+        }
+        document.getElementById('no-data').classList.add('hidden');
+
+        const pageData = filteredData.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage);
+        
+        pageData.forEach(row => {
+          const sClass = row.status === "รอเพิ่มรายการ" ? "bg-blue-100 text-blue-700 border-blue-200" : (row.status === "ค้างยืม" ? "bg-red-100 text-red-700 border-red-200" : "bg-green-100 text-green-700 border-green-200");
+          
+          let itemsHtml = (row.items || []).map(i => {
+             let name = i.name || i;
+             let noteHtml = (i.note && i.note !== '-') ? `<span class="ml-1 text-[8px] text-slate-400 italic font-mono">[${i.note}]</span>` : '';
+             return `<div class="flex items-center bg-white border border-slate-200 rounded px-1.5 py-0.5 shadow-sm mb-1"><span class="text-[9px] font-bold">${name}</span><span class="day-count">${calculateDays(i.date)}</span>${noteHtml}</div>`;
+          }).join('');
+
+          // 🌟 ดึงสถานะมาโชว์ที่ชื่อคนไข้ด้วย
+          let hn = String(row.patient).split('-')[0].trim();
+          let pStat = patientStatusMap[hn] ? ` <span class="text-[9px] ${patientStatusMap[hn]==='เสียชีวิต'?'text-red-500':'text-blue-500'}">(${patientStatusMap[hn]})</span>` : '';
+
+          tbody.innerHTML += `<tr class="border-b hover:bg-slate-50 transition-colors">
+            <td class="px-6 py-4 font-mono font-bold text-blue-700 text-xs">${row.refId}</td>
+            <td class="px-6 py-4"><div class="font-bold text-slate-700 text-sm font-sans">${row.patient}${pStat}</div><div class="text-[9px] text-slate-400 uppercase tracking-tighter">${row.ward} | ${row.borrowDate}</div></td>
+            <td class="px-6 py-4 text-center"><span class="status-badge border ${sClass}">${row.status}</span></td>
+            <td class="px-6 py-4"><div class="flex flex-col">${itemsHtml}</div></td>
+            <td class="px-6 py-4 text-center"><button onclick="window.open('${SCRIPT_URL}?p=print&ref=${row.refId}','_blank')" class="bg-blue-600 text-white px-3 py-1.5 rounded-xl text-[10px] font-bold shadow hover:bg-blue-700 active:scale-95 transition-all font-sans font-bold">🖨️ พิมพ์</button></td>
+          </tr>`;
+        });
+
+        const tp = Math.ceil(filteredData.length / itemsPerPage); 
+        if(tp > 1) { 
+          for(let i=1; i<=tp; i++) { 
+            const b = document.createElement('button'); 
+            b.innerText = i; 
+            b.className = `w-8 h-8 border rounded-lg text-xs font-bold ${i===currentPage?'bg-blue-600 text-white':'bg-white text-slate-600'}`; 
+            b.onclick = () => { currentPage = i; renderTable(); window.scrollTo(0,0); }; 
+            pagin.appendChild(b); 
+          } 
+        }
+      } catch (err) { console.error("Render Table Error:", err); }
+    }
+  </script>
+</body>
+</html>

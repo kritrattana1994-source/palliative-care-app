@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Calendar, FileText, CheckCircle, TrendingUp, AlertTriangle, 
   User, MapPin, Sparkles, Phone, Pill, Activity, Users, Home, 
-  ClipboardList, Clock, X, Send, ShieldAlert, Heart, HeartPulse, Gauge, Thermometer, Wind
+  ClipboardList, Clock, X, Send, ShieldAlert, Heart, HeartPulse, Gauge, Thermometer, Wind, Printer
 } from 'lucide-react';
 import { db, doc, getDoc, setDoc, collection, query, where, getDocs, addDoc, orderBy } from '../services/firebase';
 
@@ -295,7 +295,18 @@ export default function ClinicalTimeline({ token }) {
             </div>
           </div>
         </div>
-
+        
+        {/* Print Report Button */}
+        <div>
+          <button
+            onClick={() => navigate(`/patients/report/${id}`)}
+            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm border border-emerald-200 cursor-pointer"
+            title="พิมพ์รายงานสรุปทางคลินิกเพื่อส่งแพทย์"
+          >
+            <Printer className="w-4 h-4" />
+            <span className="hidden sm:inline">พิมพ์รายงานแพทย์</span>
+          </button>
+        </div>
       </header>
 
       {/* AI Modal */}

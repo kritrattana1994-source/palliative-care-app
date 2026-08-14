@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; color: #1f2937; margin: 0; padding: 0; }
+    @media print { @page { size: A4; margin: 8mm; } body { background-color: white; padding: 0; } .no-print { display: none !important; } .print-container { box-shadow: none !important; border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; } .main-table td, .main-table th { font-size: 11px !important; padding: 8px !important; } h1 { font-size: 20px !important; } }
+    .print-container { background: white; width: 210mm; min-height: 297mm; margin: 15px auto; padding: 15mm; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .status-pill { padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; text-transform: uppercase; border: 1px solid transparent; }
+    .status-borrow { background: #eff6ff; color: #1d4ed8; border-color: #dbeafe; }
+    .status-return { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
+    .duration-badge { font-weight: 800; color: #b91c1c; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <div class="no-print sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b py-3 flex justify-center gap-4 shadow-sm">
+    <button onclick="window.top.location.href='<?= scriptUrl ?>?p=dashboard'" class="bg-slate-700 text-white px-5 py-2 rounded-xl font-bold text-sm">กลับหน้าหลัก</button>
+    <button onclick="window.print()" class="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg font-bold font-sans">พิมพ์ใบงาน (A4)</button>
+  </div>
+  <div id="loader" class="flex flex-col items-center justify-center min-h-[60vh]"><div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div><p class="mt-4 text-slate-400 text-sm font-bold font-sans">กำลังเตรียมข้อมูลพิมพ์...</p></div>
+  <div id="slip-content" class="print-container hidden">
+    <div class="flex justify-between items-start border-b-2 border-blue-600 pb-3 mb-4">
+      <div><h1 class="text-2xl font-black text-blue-700 uppercase tracking-tighter">ใบยืม-คืนเครื่องมือแพทย์</h1><p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">HHC Management Record</p></div>
+      <div class="text-right"><div class="bg-slate-50 border-2 px-4 py-2 rounded-lg"><p class="text-[8px] text-slate-400 font-bold uppercase">REF ID</p><p id="ref-display" class="text-lg font-mono font-black text-slate-800 tracking-widest"></p></div></div>
+    </div>
+    <div class="grid grid-cols-2 gap-6 mb-5 bg-slate-50/50 p-5 rounded-2xl border">
+      <div><h3 class="text-[9px] font-black text-blue-600 uppercase mb-2">ข้อมูลผู้ป่วยและผู้ยืม</h3><p class="text-base font-bold text-slate-800"><span id="p-name">-</span></p>
+        <div class="mt-2 space-y-1 text-xs text-slate-600 font-bold font-sans"><p>📞 เบอร์โทร: <span id="p-phone">-</span></p><p>🏠 ที่อยู่: <span id="p-addr">-</span></p>
+          <div class="mt-2 pt-2 border-t border-slate-200 font-bold">👤 ผู้ยืม: <span id="p-relative" class="text-blue-700">-</span> (<span id="p-relationship">-</span>)</div></div></div>
+      <div class="text-right flex flex-col justify-between font-bold font-sans"><div><h3 class="text-[9px] font-black text-blue-600 uppercase mb-2">รายละเอียดใบงาน</h3><p class="text-xs font-semibold">Ward: <span id="p-ward">-</span></p><p class="text-xs">เจ้าหน้าที่: <span id="p-staff">-</span></p><p class="text-xs font-bold text-blue-600 uppercase tracking-wide">สถานะคนไข้: <span id="p-status-slip">-</span></p></div><div class="text-[9px] text-slate-400 italic">พิมพ์เมื่อ: <span id="p-print-date"></span></div></div>
+    </div>
+    <div class="mb-10"><h3 class="text-xs font-bold text-slate-700 mb-3 uppercase flex items-center gap-2 tracking-wide font-sans">📋 รายการเครื่องมือในใบงานนี้</h3>
+      <table class="main-table w-full text-left border-collapse border border-slate-200 shadow-sm overflow-hidden">
+        <thead class="bg-slate-100 text-[9px] font-black text-slate-500 uppercase"><tr><th class="border border-slate-200 px-3 py-3">ชื่อรายการเครื่องมือ / หมายเหตุ</th><th class="border border-slate-200 px-3 py-3 text-center">สถานะ</th><th class="border border-slate-200 px-3 py-3 text-center">วันที่ยืม - วันที่คืน</th><th class="border border-slate-200 px-3 py-3 text-center">ระยะเวลา</th><th class="border border-slate-200 px-3 py-3 text-right">มัดจำ (฿)</th></tr></thead>
+        <tbody id="current-items-body" class="font-bold"></tbody></table></div>
+    <div class="grid grid-cols-2 gap-12 mt-16 text-center text-[12px] font-bold text-slate-600 font-sans"><div class="border-t border-slate-300 pt-5 w-64 mx-auto"><p>ลงชื่อผู้ยืม (ญาติ)</p></div><div class="border-t border-slate-300 pt-5 w-64 mx-auto"><p>ลงชื่อเจ้าหน้าที่</p></div></div>
+  </div>
+  <script>
+    const TARGET_REF = '<?= targetRef ?>';
+    function calculateDuration(b, r) { if (!b || b === "N/A") return "-"; try { const parseD = (s) => { const p = s.split(' '); const d = p[0].split('/'); const t = p[1].split(':'); return new Date(d[2], d[1]-1, d[0], t[0]||0, t[1]||0); }; const bDate = parseD(b); const eDate = (r && r !== "N/A" && r !== "-") ? parseD(r) : new Date(); return Math.floor(Math.abs(eDate - bDate) / 86400000) + " วัน"; } catch(e) { return "-"; } }
+    window.onload = function() { if (!TARGET_REF || TARGET_REF === 'undefined') { document.getElementById('loader').innerHTML = '❌ ไม่พบเลขใบงาน'; return; } google.script.run.withSuccessHandler(render).withFailureHandler(err => { document.getElementById('loader').innerHTML = '❌ เกิดข้อผิดพลาด: ' + err.message; }).getPrintData(TARGET_REF); };
+    function render(data) {
+      if(!data || !data.refId) { document.getElementById('loader').innerHTML = '❌ ข้อมูลไม่สมบูรณ์'; return; }
+      document.getElementById('loader').style.display = 'none'; document.getElementById('slip-content').classList.remove('hidden');
+      document.getElementById('ref-display').innerText = data.refId; document.getElementById('p-name').innerText = data.patient;
+      document.getElementById('p-phone').innerText = data.phone || "-"; document.getElementById('p-addr').innerText = data.address || "-";
+      document.getElementById('p-ward').innerText = data.ward || "-"; document.getElementById('p-staff').innerText = data.staff || "-";
+      document.getElementById('p-status-slip').innerText = data.status || "Admit";
+      document.getElementById('p-relative').innerText = data.relative || "-"; document.getElementById('p-relationship').innerText = data.relationship || "-";
+      document.getElementById('p-print-date').innerText = new Date().toLocaleString('th-TH');
+      const body = document.getElementById('current-items-body');
+      if(!data.allItemsForPrint || data.allItemsForPrint.length === 0) { body.innerHTML = '<tr><td colspan="5" class="py-12 text-center text-slate-300 italic border">ใบงานจอง : รอดำเนินการระบุเครื่องมือ</td></tr>'; } 
+      else { data.allItemsForPrint.forEach(item => { const isDone = item.status === "คืนแล้ว"; body.innerHTML += `<tr class="${isDone ? 'bg-slate-50 text-slate-400 font-normal font-sans' : ''}"><td class="border border-slate-200 px-3 py-3"><b>${item.equipment}</b><br><span class="text-[9px] font-normal italic font-sans">${item.note || '-'}</span></td><td class="border text-center"><span class="status-pill ${isDone ? 'status-return' : 'status-borrow'} font-bold font-sans">${item.status}</span></td><td class="border text-center text-[9px] font-mono">ยืม: ${item.borrowDate}<br>${isDone ? 'คืน: '+item.returnDate : ''}</td><td class="border text-center"><span class="duration-badge font-black font-sans">${calculateDuration(item.borrowDate, item.returnDate)}</span></td><td class="border text-right font-mono font-bold">${Number(item.deposit).toLocaleString()}</td></tr>`; }); }
+    }
+  </script>
+</body>
+</html>

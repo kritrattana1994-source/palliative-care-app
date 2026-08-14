@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f0f7ff; margin: 0; }
+    #loader { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .input-field { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; width: 100%; outline: none; transition: all 0.2s; background: white; }
+    .check-btn { transition: all 0.2s; } .check-btn:active { transform: scale(0.95); }
+    /* 🌟 สไตล์สำหรับหน้าต่างเตือน LINE */
+    #line-warning { display: none; position: fixed; inset: 0; background: #00B900; z-index: 10000; justify-content: center; align-items: center; padding: 20px; color: white; text-align: center; }
+  </style>
+</head>
+<body class="p-2 md:p-8">
+
+  <!-- 🌟 หน้าแจ้งเตือนกรณีเปิดผ่าน LINE Browser -->
+  <div id="line-warning">
+    <div class="bg-white/10 p-8 rounded-3xl backdrop-blur-md max-w-sm border border-white/20 shadow-2xl">
+      <div class="text-6xl mb-4">⚠️</div>
+      <h2 class="text-2xl font-bold mb-2">กรุณาเปิดผ่าน Chrome / Safari</h2>
+      <p class="text-sm font-light leading-relaxed mb-6">
+        คุณกำลังเปิดระบบผ่านแอปพลิเคชัน LINE ซึ่งจะไม่สามารถใช้งานกล้องหรืออัปโหลดรูปภาพได้ตามปกติ<br><br>
+        กรุณากดไอคอน <b class="bg-white text-green-600 px-2 py-1 rounded">⁝ (3 จุด)</b> ที่มุมขวาบน หรือมุมขวาล่างของจอ แล้วเลือก <br><br>
+        <b class="bg-white text-green-600 px-3 py-1.5 rounded-lg shadow-sm block mt-2 text-lg">"เปิดด้วยเบราว์เซอร์อื่น"</b><br>
+        <span class="text-xs opacity-80">(Open in default browser)</span>
+      </p>
+    </div>
+  </div>
+
+  <div id="loader"><div class="spinner mb-3"></div><p id="loader-text" class="text-blue-600 font-bold">กำลังดำเนินการ...</p></div>
+
+  <!-- เมนูนำทาง -->
+  <div class="max-w-4xl mx-auto mb-6 flex flex-wrap justify-center gap-3" id="nav-menu">
+    <button class="bg-blue-600 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm">หน้ายืมเครื่อง</button>
+    <a href="<?= scriptUrl ?>?p=return" target="_top" class="bg-white text-red-600 border border-red-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-red-50 transition-all text-center">หน้าคืน/แก้ไข <br><span class="text-[9px]">(ต้องมีรหัสผ่านเข้าเมนูนี้)</span></a>
+    <a href="<?= scriptUrl ?>?p=patient_manage" target="_top" class="bg-white text-purple-600 border border-purple-50 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-purple-50 transition-all text-center">จัดการคนไข้ <br><span class="text-[9px]">(ต้องมีรหัสผ่านเข้าเมนูนี้)</span></a>
+    <a href="<?= scriptUrl ?>?p=dashboard" target="_top" class="bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-2xl shadow-sm font-bold text-sm hover:bg-slate-50 transition-all">แดชบอร์ด/พิมพ์ใบงาน</a>
+  </div>
+
+  <div class="max-w-2xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border-t-8 border-blue-600 p-6" id="main-content">
+    <div class="text-center mb-6"><h1 class="text-2xl font-bold text-blue-700 uppercase tracking-tighter">🩺 ระบบยืมเครื่องมือแพทย์ Palliative Care</h1></div>
+    
+    <!-- 🔍 ตรวจสอบ HN -->
+    <div class="mb-8 p-5 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 shadow-inner">
+      <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">🔍 ตรวจสอบ HN คนไข้ก่อนลงทะเบียนใหม่</label>
+      <div class="flex gap-2">
+        <input type="text" id="check-hn-input" placeholder="กรอกเลข HN เพื่อเช็คประวัติ" class="flex-1 p-3 border-2 border-white rounded-xl outline-none focus:border-blue-400 font-bold text-slate-700 shadow-sm">
+        <button onclick="handleCheckHn()" class="check-btn bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700">ตรวจสอบ</button>
+      </div>
+      <div id="hn-result-msg" class="mt-3 text-xs font-bold hidden"></div>
+    </div>
+
+    <form onsubmit="submitTransaction(event)">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div><label class="block text-gray-700 text-[10px] font-bold mb-1 uppercase tracking-widest">รหัสอ้างอิง</label><input type="text" id="ref-id" value="ระบบจะออกเลขให้อัตโนมัติ" readonly class="w-full px-4 py-2 border rounded-xl bg-slate-50 font-sans font-bold text-sm text-slate-400 shadow-inner italic"></div>
+        <div><label class="block text-gray-700 text-[10px] font-bold mb-1 uppercase tracking-widest">ชื่อเจ้าหน้าที่ *</label><input type="text" id="staff-name" required class="input-field" placeholder="ระบุชื่อผู้บันทึก"></div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div><label class="block text-gray-700 text-[10px] font-bold mb-1 uppercase tracking-widest">เลือก Ward *</label><select id="ward-list" required class="input-field"></select></div>
+        <div>
+          <div class="flex justify-between items-end mb-1"><label class="block text-gray-700 text-[10px] font-bold uppercase tracking-widest">เลือกคนไข้ *</label><button type="button" onclick="openModal()" class="text-[10px] font-bold text-green-600 hover:underline">+ ลงทะเบียนใหม่</button></div>
+          <select id="p-list" onchange="checkStatus(this.value)" required class="input-field font-bold text-slate-700"></select>
+        </div>
+      </div>
+      
+      <div id="p-status-box" class="hidden mb-6 p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between shadow-sm">
+         <div><p class="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">ปรับปรุงสถานะคนไข้</p>
+           <select id="borrow-status" class="w-40 p-2 border border-blue-200 rounded-xl text-xs font-black text-blue-700 outline-none bg-white shadow-inner"><option value="Admit">Admit</option><option value="D/C">D/C</option><option value="เสียชีวิต">เสียชีวิต</option></select>
+         </div>
+         <div class="text-right"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">สถานะเดิม</p><p id="p-old-status" class="text-sm font-black text-slate-600">-</p></div>
+      </div>
+
+      <div id="equipment-container" class="space-y-4 mb-6"></div>
+      <button type="button" onclick="addItem()" class="w-full bg-blue-50 text-blue-700 font-bold py-3 rounded-xl mb-8 border-2 border-dashed border-blue-100 hover:bg-blue-100 transition-all active:scale-95 shadow-sm">+ เพิ่มรายการเครื่องมือ</button>
+      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-xl text-lg active:scale-95 transition-all">บันทึกข้อมูลและออกเลขใบงาน</button>
+    </form>
+  </div>
+
+  <div id="patientModal" class="hidden fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl font-bold mb-4 text-green-600 flex items-center gap-2 font-sans">👤 ลงทะเบียนคนไข้ใหม่</h2>
+      <div class="space-y-3">
+        <div><label class="text-[10px] font-bold text-gray-400 uppercase">เลข HN *</label><input type="text" id="reg-hn" placeholder="ระบุ HN" class="input-field"></div>
+        <div><label class="text-[10px] font-bold text-gray-400 uppercase">ชื่อ-นามสกุล คนไข้ *</label><input type="text" id="reg-name" placeholder="ชื่อ-นามสกุล" class="input-field"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="text-[10px] font-bold text-gray-400 uppercase">ชื่อญาติ</label><input type="text" id="reg-rel" placeholder="ชื่อญาติ" class="input-field"></div>
+          <div><label class="text-[10px] font-bold text-gray-400 uppercase">ความสัมพันธ์</label><input type="text" id="reg-ship" placeholder="ความสัมพันธ์" class="input-field"></div>
+        </div>
+        <div><label class="text-[10px] font-bold text-gray-400 uppercase">ที่อยู่ปัจจุบัน</label><textarea id="reg-addr" placeholder="ระบุที่อยู่" rows="2" class="input-field"></textarea></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="text-[10px] font-bold text-gray-400 uppercase">เบอร์โทรติดต่อ</label><input type="tel" id="reg-phone" placeholder="08x-xxxxxxx" class="input-field"></div>
+          <div><label class="text-[10px] font-bold text-gray-400 uppercase">สถานะเริ่มต้น</label>
+            <select id="reg-status" class="input-field font-bold text-green-600"><option value="Admit">Admit</option><option value="D/C">D/C</option><option value="เสียชีวิต">เสียชีวิต</option></select>
+          </div>
+        </div>
+        <button onclick="savePatient()" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg mt-4 active:scale-95 transition-all">บันทึกข้อมูลคนไข้</button>
+        <button onclick="closeModal()" class="w-full mt-3 text-slate-400 text-sm font-bold underline">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = '<?= scriptUrl ?>'; let equips = [];
+    function showLoader(s, t="กำลังดำเนินการ...") { document.getElementById('loader').style.display = s ? 'flex' : 'none'; document.getElementById('loader-text').innerText = t; if(s) setTimeout(()=>showLoader(false), 15000); }
+    
+    // 🌟 ระบบตรวจจับว่าผู้ใช้เข้าเว็บผ่านแอป LINE หรือไม่
+    window.onload = () => { 
+      const isLineApp = navigator.userAgent.indexOf("Line") > -1;
+      if (isLineApp) {
+        document.getElementById('nav-menu').style.display = 'none';
+        document.getElementById('main-content').style.display = 'none';
+        document.getElementById('line-warning').style.display = 'flex';
+        return; // หยุดการทำงานส่วนอื่น
+      }
+
+      showLoader(true); 
+      google.script.run.withSuccessHandler(d => { 
+        showLoader(false); 
+        equips = d.availableEquips; 
+        updateSelect('ward-list', d.wards, '-- เลือก Ward --'); 
+        updateSelect('p-list', d.patients, '-- เลือกคนไข้ --'); 
+      }).withFailureHandler(()=>showLoader(false)).getDropdownData(); 
+    };
+
+    function updateSelect(id, items, p) { const s = document.getElementById(id); s.innerHTML = `<option value="" disabled selected>${p}</option>`; items.forEach(i => s.innerHTML += `<option value="${i}">${i}</option>`); }
+
+    function handleCheckHn() {
+      const hn = document.getElementById('check-hn-input').value.trim();
+      const msgDiv = document.getElementById('hn-result-msg');
+      if(!hn) return msgDiv.classList.add('hidden');
+      showLoader(true, "กำลังค้นหาประวัติ...");
+      google.script.run.withSuccessHandler(res => {
+        showLoader(false); msgDiv.classList.remove('hidden');
+        if(res.exists) { 
+          const isDeath = res.status === "เสียชีวิต";
+          const colorClass = isDeath ? "text-red-600 bg-red-50 border-red-100" : "text-green-600 bg-green-50 border-green-100";
+          msgDiv.innerHTML = `✅ พบข้อมูลในระบบแล้ว: <span class="text-blue-600 font-bold">${res.name}</span> <br>สถานะปัจจุบัน: <b class="${isDeath?'text-red-600':''}">${res.status}</b><br>${isDeath ? '❌ ไม่สามารถยืมเครื่องใหม่ได้' : 'สามารถเลือกชื่อในช่อง "เลือกคนไข้" ด้านล่างได้เลย'}`; 
+          msgDiv.className = `mt-3 text-xs font-bold ${colorClass} p-3 rounded-xl border`;
+        }
+        else { msgDiv.innerHTML = `⚠️ ยังไม่มีข้อมูล HN นี้ในระบบ <br>กรุณาเพิ่มข้อมูลที่เมนู <span class="text-red-500 underline">[+ ลงทะเบียนใหม่]</span>`; msgDiv.className = "mt-3 text-xs font-bold text-orange-600 p-3 bg-orange-50 rounded-xl border border-orange-100"; }
+      }).checkHnExists(hn);
+    }
+
+    function checkStatus(p) { if(!p) return; showLoader(true); google.script.run.withSuccessHandler(res => { showLoader(false); document.getElementById('p-status-box').classList.remove('hidden'); document.getElementById('p-old-status').innerText = res.currentStatus; document.getElementById('borrow-status').value = res.currentStatus; if(res.hasOutstanding) { Swal.fire({ title: 'คนไข้มียังงานค้าง!', html: `ใบงาน: <br><b class="text-blue-600 font-mono">${res.items.join('<br>')}</b><br><br>ต้องการเปิด Ref ใหม่หรือไม่?`, icon: 'info', showCancelButton: true, confirmButtonText: 'เปิด Ref ใหม่', cancelButtonText: 'เลือกคนไข้อื่น' }).then((r)=> { if(!r.isConfirmed) document.getElementById('p-list').value=""; }); } }).checkPatientStatusBorrow(p); }
+    function addItem() {
+      let opts = '<option value="" disabled selected>-- เลือกเครื่องมือ --</option>'; equips.forEach(e => opts += `<option value="${e}">${e}</option>`);
+      const h = `<div class="item bg-blue-50 p-4 rounded-2xl border border-blue-100 relative shadow-sm mt-4 animate-in slide-in-from-bottom duration-200">
+          <button type="button" class="absolute top-2 right-4 text-slate-300 hover:text-red-500 text-2xl font-bold" onclick="this.parentElement.remove()">&times;</button>
+          <div class="mb-3"><label class="text-[10px] font-bold text-slate-400 uppercase">เครื่องมือ *</label><select class="sel-eq w-full p-2 border rounded-xl font-bold bg-white" required>${opts}</select></div>
+          <div class="grid grid-cols-2 gap-3"><div><label class="text-[10px] font-bold text-slate-400">มัดจำ</label><input type="number" class="inp-dep w-full p-2 border rounded-xl font-bold text-blue-600" value="0"></div>
+          <div class="flex flex-col justify-end"><label class="cursor-pointer bg-white border border-blue-200 p-2 rounded-xl text-center text-[10px] font-bold text-blue-600 hover:bg-blue-100 shadow-sm transition-all">📸 ถ่ายรูป/แนบไฟล์ *<input type="file" accept="image/*" capture="environment" class="hidden" onchange="procImg(this)"></label></div></div>
+          <img src="" class="img-preview hidden w-full h-32 object-cover rounded-xl mt-3 border border-blue-200 shadow-sm"><textarea class="base64-store hidden"></textarea>
+          <input type="text" class="inp-note w-full p-2 border rounded-xl text-xs mt-3 outline-none shadow-sm bg-white" placeholder="รหัสเครื่อง / หมายเหตุ"></div>`;
+      document.getElementById('equipment-container').insertAdjacentHTML('beforeend', h);
+    }
+    function procImg(input) { const file = input.files[0]; if(!file) return; const item = input.closest('.item'); showLoader(true, "ประมวลผลรูปถ่าย..."); const reader = new FileReader(); reader.onload = e => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; if (w > 800) { h *= 800/w; w = 800; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); const b64 = canvas.toDataURL('image/jpeg', 0.6); item.querySelector('.base64-store').value = b64; item.querySelector('.img-preview').src = b64; item.querySelector('.img-preview').classList.remove('hidden'); showLoader(false); }; img.src = e.target.result; }; reader.readAsDataURL(file); }
+    function savePatient() { 
+      const data = { 
+        hn: document.getElementById('reg-hn').value, 
+        patientName: document.getElementById('reg-name').value,
+        relative: document.getElementById('reg-rel').value || "-",
+        relationship: document.getElementById('reg-ship').value || "-",
+        address: document.getElementById('reg-addr').value || "-",
+        phone: document.getElementById('reg-phone').value || "-",
+        status: document.getElementById('reg-status').value
+      }; 
+      if(!data.hn || !data.patientName) return Swal.fire('เตือน', 'กรุณากรอก HN และชื่อคนไข้', 'warning'); 
+      showLoader(true, "กำลังบันทึก..."); 
+      google.script.run.withSuccessHandler(res => { 
+        showLoader(false); closeModal(); 
+        Swal.fire('สำเร็จ', res, 'success').then(()=> { 
+          window.top.location.href = SCRIPT_URL + "?p=borrow";
+        }); 
+      }).saveNewPatient(data); 
+    }
+    function submitTransaction(e) { 
+      e.preventDefault(); const items = []; const refId = ""; const blocks = document.querySelectorAll('.item'); let valid = true; 
+      blocks.forEach(b => { const b64 = b.querySelector('.base64-store').value; if(!b64) valid = false; items.push({ type:'ยืม', equipment: b.querySelector('.sel-eq').value, note: b.querySelector('.inp-note').value, deposit: b.querySelector('.inp-dep').value, imageRaw: b64 }); }); 
+      if(blocks.length > 0 && !valid) return Swal.fire('รูปภาพ!', 'กรุณาถ่ายรูปประกอบทุกรายการ', 'warning'); 
+      showLoader(true, "กำลังบันทึกและออกเลขใบงาน..."); 
+      google.script.run.withSuccessHandler(res => { 
+        showLoader(false); 
+        Swal.fire({ title: 'สำเร็จ!', text: res, icon: 'success' }).then(() => { 
+          window.top.location.href = SCRIPT_URL + "?p=borrow"; 
+        }); 
+      }).withFailureHandler(err => { showLoader(false); Swal.fire('Error', err.message, 'error'); }).saveTransaction({ refId, staff: document.getElementById('staff-name').value, ward: document.getElementById('ward-list').value, patient: document.getElementById('p-list').value, items, newStatus: document.getElementById('borrow-status').value }); 
+    }
+    function openModal() { document.getElementById('patientModal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('patientModal').classList.add('hidden'); }
+  </script>
+</body>
+</html>
