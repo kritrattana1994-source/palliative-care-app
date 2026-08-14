@@ -48,9 +48,15 @@ export default function ClinicalTimeline({ token }) {
           setPatient(null);
         }
 
-        const assQ = query(collection(db, 'assessments'), where('patientId', '==', id), orderBy('createdAt', 'asc'));
+        const assQ = query(collection(db, 'assessments'), where('patientId', '==', id));
         const assSnap = await getDocs(assQ);
-        const assessmentsData = assSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const assessmentsData = assSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => {
+            const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return timeA - timeB;
+          });
         setAssessments(assessmentsData);
 
         const logsQ = query(collection(db, 'patients', id, 'eventLogs'), orderBy('createdAt', 'desc'));
@@ -222,13 +228,6 @@ export default function ClinicalTimeline({ token }) {
           </div>
         </div>
 
-        <button 
-          onClick={handleAiSummary}
-          className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"
-        >
-          <Sparkles className="w-4 h-4 text-emerald-200 fill-emerald-200 animate-pulse" />
-          <span>วิเคราะห์และสรุปเคส (AI Summary)</span>
-        </button>
       </header>
 
       {/* AI Modal */}
