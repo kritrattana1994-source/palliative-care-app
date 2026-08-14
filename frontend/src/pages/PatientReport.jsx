@@ -78,11 +78,26 @@ export default function PatientReport() {
                     if (eq.count > 0) outstandingEq.push(eq.name);
                 });
 
+                const combinedTimeline = [
+                    ...eventLogs.map(log => ({ 
+                        ...log, 
+                        isAssessment: false, 
+                        sortTime: new Date(log.createdAt).getTime() 
+                    })), 
+                    ...assessments.map(ass => ({
+                        id: ass.id,
+                        isAssessment: true,
+                        title: `📊 ประเมินอาการ`,
+                        date: ass.date,
+                        time: ass.createdAt?.toDate ? ass.createdAt.toDate().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '',
+                        sortTime: ass.createdAt?.toMillis ? ass.createdAt.toMillis() : 0,
+                        assData: ass
+                    }))
+                ].sort((a, b) => b.sortTime - a.sortTime);
+
                 setData({
                     patient: patientData,
-                    latestAssessment: assessments[0] || null,
-                    assessments: assessments,
-                    timeline: eventLogs.slice(0, 8), // Show last 8 events
+                    combinedTimeline: combinedTimeline,
                     equipments: outstandingEq
                 });
             } catch (err) {
@@ -107,12 +122,12 @@ export default function PatientReport() {
                     <ArrowLeft className="w-4 h-4" /> กลับ
                 </button>
                 <button onClick={() => window.print()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-colors">
-                    <Printer className="w-5 h-5" /> พิมพ์รายงาน (A4 แนวนอน)
+                    <Printer className="w-5 h-5" /> พิมพ์รายงาน (A4 แนวตั้ง)
                 </button>
             </div>
 
-            {/* A4 Landscape Paper Container */}
-            <div className="bg-white mx-auto mt-6 rounded shadow-lg p-8 print:shadow-none print:m-0 print:p-0 print:w-full print:rounded-none" style={{ width: '297mm', minHeight: '210mm' }}>
+            {/* A4 Portrait Paper Container */}
+            <div className="bg-white mx-auto mt-6 rounded shadow-lg p-8 print:shadow-none print:m-0 print:p-0 print:w-full print:rounded-none" style={{ width: '210mm', minHeight: '297mm' }}>
                 
                 {/* Header */}
                 <div className="flex justify-between items-start border-b-2 border-emerald-700 pb-4 mb-4">
@@ -133,108 +148,92 @@ export default function PatientReport() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-12 gap-6">
-                    {/* Left Column (Patient Info + Equipment) */}
-                    <div className="col-span-4 space-y-4">
-                        
-                        {/* Patient Demographics */}
-                        <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 h-[190px]">
-                            <h3 className="text-xs font-black text-emerald-700 uppercase mb-3 flex items-center gap-1.5"><HeartPulse className="w-4 h-4"/> ข้อมูลผู้ป่วย</h3>
-                            <p className={`text-xl font-black ${isDeath ? 'text-red-700' : 'text-slate-800'}`}>
-                                {pt.name} 
-                                {isDeath && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-lg align-middle">เสียชีวิต</span>}
-                            </p>
-                            <div className="mt-2 text-sm text-slate-600 font-semibold space-y-1">
-                                <p>HN: <span className="text-slate-900">{pt.id}</span></p>
-                                <p>อายุ: <span className="text-slate-900">{pt.age || '-'} ปี</span> • เพศ: <span className="text-slate-900">{pt.gender || '-'}</span></p>
-                                <p>การวินิจฉัย (Dx): <span className="text-emerald-800 font-bold">{pt.disease}</span></p>
-                                <p>สถานะคลินิก: <span className="text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-md">{pt.clinicalStatus || 'Admit'}</span></p>
-                                <p>ผู้ดูแล: <span className="text-slate-900">{pt.caregiverName || '-'} ({pt.caregiverRelation || '-'})</span></p>
-                                <p>เบอร์ติดต่อ: <span className="text-slate-900">{pt.relativePhone || pt.phone || '-'}</span></p>
-                            </div>
+                <div className="grid grid-cols-2 gap-6">
+                    {/* Patient Demographics */}
+                    <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                        <h3 className="text-xs font-black text-emerald-700 uppercase mb-3 flex items-center gap-1.5"><HeartPulse className="w-4 h-4"/> ข้อมูลผู้ป่วย</h3>
+                        <p className={`text-xl font-black ${isDeath ? 'text-red-700' : 'text-slate-800'}`}>
+                            {pt.name} 
+                            {isDeath && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-lg align-middle">เสียชีวิต</span>}
+                        </p>
+                        <div className="mt-2 text-sm text-slate-600 font-semibold space-y-1">
+                            <p>HN: <span className="text-slate-900">{pt.id}</span></p>
+                            <p>อายุ: <span className="text-slate-900">{pt.age || '-'} ปี</span> • เพศ: <span className="text-slate-900">{pt.gender || '-'}</span></p>
+                            <p>การวินิจฉัย (Dx): <span className="text-emerald-800 font-bold">{pt.disease}</span></p>
+                            <p>สถานะคลินิก: <span className="text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-md">{pt.clinicalStatus || 'Admit'}</span></p>
+                            <p>ผู้ดูแล: <span className="text-slate-900">{pt.caregiverName || '-'} ({pt.caregiverRelation || '-'})</span></p>
+                            <p>เบอร์ติดต่อ: <span className="text-slate-900">{pt.relativePhone || pt.phone || '-'}</span></p>
                         </div>
-
-                        {/* Equipments */}
-                        <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 h-[175px]">
-                            <h3 className="text-xs font-black text-emerald-700 uppercase mb-2 flex items-center gap-1.5"><ShieldAlert className="w-4 h-4"/> เครื่องมือแพทย์ที่กำลังยืม (Active Equipments)</h3>
-                            {data.equipments.length === 0 ? (
-                                <p className="text-slate-400 font-semibold text-sm italic mt-4 text-center">ไม่มีรายการเครื่องมือค้างยืม</p>
-                            ) : (
-                                <ul className="list-disc pl-5 text-xs font-semibold text-slate-700 space-y-1.5">
-                                    {data.equipments.map((eq, i) => (
-                                        <li key={i}>{eq}</li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-
                     </div>
 
-                    {/* Middle Column (ESAS History) */}
-                    <div className="col-span-8">
-                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm h-[380px] flex flex-col">
-                            <h3 className="text-xs font-black text-indigo-700 uppercase mb-4 flex items-center gap-1.5 justify-between">
-                                <span className="flex items-center gap-1.5"><Activity className="w-4 h-4"/> ประวัติผลการประเมินอาการ (ESAS History)</span>
-                            </h3>
-                            
-                            {!data.assessments || data.assessments.length === 0 ? (
-                                <div className="flex-1 flex justify-center items-center text-slate-400 font-bold text-sm italic">ยังไม่มีข้อมูลการประเมิน</div>
-                            ) : (
-                                <div className="overflow-auto flex-1 pr-2">
-                                    <table className="w-full text-center border-collapse border-b border-slate-200">
-                                        <thead className="bg-indigo-50 text-[10px] font-black text-indigo-800 uppercase sticky top-0">
-                                            <tr>
-                                                <th className="border-y border-slate-200 px-2 py-2 text-left bg-indigo-50">วัน-เวลา</th>
-                                                {symptomsList.map(s => <th key={s.key} className="border-y border-slate-200 px-1 py-2 bg-indigo-50">{s.short}</th>)}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {data.assessments.slice(0, 15).map((ass, idx) => (
-                                                <tr key={idx} className="bg-white text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
-                                                    <td className="border-b border-slate-200 px-2 py-2 whitespace-nowrap text-left">{ass.date} {ass.createdAt?.toDate ? ass.createdAt.toDate().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : ''}</td>
-                                                    {symptomsList.map(s => {
-                                                        const val = (ass.scores && ass.scores[s.key]) ?? 0;
-                                                        const isHigh = val >= 7;
-                                                        return (
-                                                            <td key={s.key} className={`border-b border-slate-200 px-1 py-2 ${isHigh ? 'text-red-600 font-black bg-red-50/50' : 'text-slate-600'}`}>
-                                                                {val}
-                                                            </td>
-                                                        );
-                                                    })}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
+                    {/* Equipments */}
+                    <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                        <h3 className="text-xs font-black text-emerald-700 uppercase mb-2 flex items-center gap-1.5"><ShieldAlert className="w-4 h-4"/> เครื่องมือแพทย์ที่กำลังยืม (Active Equipments)</h3>
+                        {data.equipments.length === 0 ? (
+                            <p className="text-slate-400 font-semibold text-sm italic mt-4 text-center">ไม่มีรายการเครื่องมือค้างยืม</p>
+                        ) : (
+                            <ul className="list-disc pl-5 text-xs font-semibold text-slate-700 space-y-1.5 mt-3">
+                                {data.equipments.map((eq, i) => (
+                                    <li key={i}>{eq}</li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
                 </div>
 
-                {/* Bottom Row (Timeline) */}
+                {/* Combined Timeline Row */}
                 <div className="mt-6">
-                    <h3 className="text-xs font-black text-emerald-700 uppercase mb-3 flex items-center gap-1.5 border-b-2 border-emerald-100 pb-2">
-                        <ClipboardList className="w-4 h-4"/> ประวัติเหตุการณ์ล่าสุด (Recent Timeline Events)
+                    <h3 className="text-sm font-black text-emerald-700 uppercase mb-3 flex items-center gap-1.5 border-b-2 border-emerald-100 pb-2">
+                        <ClipboardList className="w-5 h-5"/> ประวัติการประเมินและการดูแล (Clinical Timeline)
                     </h3>
-                    {data.timeline.length === 0 ? (
+                    {data.combinedTimeline.length === 0 ? (
                         <p className="text-slate-400 font-semibold text-sm italic text-center py-4">ไม่มีประวัติเหตุการณ์</p>
                     ) : (
                         <table className="w-full text-left border-collapse border border-slate-200">
                             <thead className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase">
                                 <tr>
-                                    <th className="border border-slate-200 px-3 py-2 w-[15%]">วัน-เวลา</th>
-                                    <th className="border border-slate-200 px-3 py-2 w-[20%]">หมวดหมู่</th>
-                                    <th className="border border-slate-200 px-3 py-2 w-[50%]">รายละเอียด</th>
+                                    <th className="border border-slate-200 px-3 py-2 w-[18%]">วัน-เวลา</th>
+                                    <th className="border border-slate-200 px-3 py-2 w-[67%]">รายละเอียด / ผลประเมิน</th>
                                     <th className="border border-slate-200 px-3 py-2 w-[15%]">ผู้บันทึก</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.timeline.map((log, idx) => (
+                                {data.combinedTimeline.map((log, idx) => (
                                     <tr key={idx} className="bg-white text-[11px] font-semibold text-slate-700">
-                                        <td className="border border-slate-200 px-3 py-2 whitespace-nowrap">{log.date} {log.time}</td>
-                                        <td className="border border-slate-200 px-3 py-2 text-emerald-800">{log.title}</td>
-                                        <td className="border border-slate-200 px-3 py-2 leading-relaxed">{log.content}</td>
-                                        <td className="border border-slate-200 px-3 py-2 text-slate-500">{log.recordedBy}</td>
+                                        <td className="border border-slate-200 px-3 py-2 whitespace-nowrap align-top">{log.date} {log.time}</td>
+                                        <td className="border border-slate-200 px-3 py-2 align-top">
+                                            {log.isAssessment ? (
+                                                <div>
+                                                    <p className="font-bold text-indigo-700 mb-1">{log.title}</p>
+                                                    <div className="grid grid-cols-9 gap-1 max-w-lg mb-1">
+                                                        {symptomsList.map(s => {
+                                                            const val = (log.assData.scores && log.assData.scores[s.key]) ?? 0;
+                                                            return (
+                                                                <div key={s.key} className={`text-center py-1 border rounded ${val >= 7 ? 'bg-red-50 text-red-600 border-red-200 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                                                                    <div className="text-[8px] truncate">{s.short}</div>
+                                                                    <div className="text-sm">{val}</div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                    {(log.assData.vitalSigns || log.assData.bp) && (
+                                                        <div className="flex flex-wrap gap-3 text-[9px] mt-1.5 font-bold text-slate-500">
+                                                            <span className="flex items-center gap-1"><Activity className="w-3 h-3 text-rose-500"/> BP: {log.assData.vitalSigns?.bp || log.assData.bp || '-'}</span>
+                                                            <span className="flex items-center gap-1"><Heart className="w-3 h-3 text-red-500"/> HR: {log.assData.vitalSigns?.pulse || log.assData.pulse || '-'}</span>
+                                                            <span className="flex items-center gap-1"><Thermometer className="w-3 h-3 text-amber-500"/> Temp: {log.assData.vitalSigns?.temp || log.assData.temp || '-'}</span>
+                                                            <span className="flex items-center gap-1"><Wind className="w-3 h-3 text-blue-500"/> SpO2: {log.assData.vitalSigns?.spo2 || log.assData.spo2 || '-'}</span>
+                                                        </div>
+                                                    )}
+                                                    {log.assData.notes && <p className="text-[10px] text-slate-500 mt-1.5 p-1.5 bg-amber-50 border border-amber-100 rounded">💬 {log.assData.notes}</p>}
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <p className="font-bold text-emerald-800 mb-0.5">{log.title}</p>
+                                                    <p className="leading-relaxed">{log.content}</p>
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="border border-slate-200 px-3 py-2 text-slate-500 align-top">{log.isAssessment ? 'ระบบ' : log.recordedBy}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -247,7 +246,7 @@ export default function PatientReport() {
             {/* Global Print Styles inside React */}
             <style dangerouslySetInnerHTML={{__html: `
                 @media print {
-                    @page { size: A4 landscape; margin: 0; }
+                    @page { size: A4 portrait; margin: 0; }
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: white !important; }
                 }
             `}} />
