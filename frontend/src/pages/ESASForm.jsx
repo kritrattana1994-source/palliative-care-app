@@ -569,8 +569,8 @@ export default function ESASForm() {
       <div className="min-h-screen bg-emerald-50/60 py-8 px-4 flex items-center justify-center">
         <div className="w-full max-w-md space-y-4">
           
-          <div ref={summaryRef} className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-emerald-100 text-center space-y-6 animate-fadeIn">
-            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 border-4 border-emerald-50 shadow-inner">
+          <div ref={summaryRef} className="bg-white rounded-xl p-5 sm:p-6 shadow-md border border-slate-200 text-center space-y-5 animate-fadeIn">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 border-2 border-emerald-50 shadow-inner">
               <CheckCircle className="w-10 h-10" />
             </div>
             
@@ -583,32 +583,32 @@ export default function ESASForm() {
             </div>
 
             {/* Score Summary and Self-Care */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {symptomsMeta.map(s => {
                 const val = scores[s.key];
-                let badgeClass = 'bg-emerald-50 border-emerald-200 text-emerald-900';
-                let scoreBadge = 'bg-emerald-200 text-emerald-900 border-emerald-300';
+                let badgeClass = 'bg-emerald-50/50 border-emerald-200 text-emerald-900';
+                let scoreBadge = 'bg-emerald-100 text-emerald-900 border-emerald-300';
                 if (val >= 7) {
-                  badgeClass = 'bg-red-50 border-red-200 text-red-900';
-                  scoreBadge = 'bg-red-200 text-red-900 border-red-300';
+                  badgeClass = 'bg-red-50/50 border-red-200 text-red-900';
+                  scoreBadge = 'bg-red-100 text-red-900 border-red-300';
                 } else if (val >= 4) {
-                  badgeClass = 'bg-amber-50 border-amber-200 text-amber-900';
-                  scoreBadge = 'bg-amber-200 text-amber-900 border-amber-300';
+                  badgeClass = 'bg-amber-50/50 border-amber-200 text-amber-900';
+                  scoreBadge = 'bg-amber-100 text-amber-900 border-amber-300';
                 }
                 const defaultGuide = val >= 7 ? 'แนะนำให้ติดต่อพยาบาลด่วนเพื่อรับคำแนะนำเพิ่มเติม' : 'พักผ่อนให้เพียงพอและสังเกตอาการ';
                 const guide = assessmentConfig?.[s.key]?.[val]?.selfCareGuide || defaultGuide;
 
                 return (
-                  <div key={s.key} className={`p-4 rounded-2xl border text-left shadow-sm ${badgeClass}`}>
+                  <div key={s.key} className={`p-3 rounded-md border text-left ${badgeClass}`}>
                     <div className="flex justify-between items-center">
-                       <span className="font-bold text-sm sm:text-base">{s.title}</span>
-                       <span className={`font-black px-3 py-1 rounded-lg border text-sm shadow-sm ${scoreBadge}`}>
+                       <span className="font-bold text-sm">{s.title}</span>
+                       <span className={`font-black px-2.5 py-0.5 rounded border text-xs shadow-sm ${scoreBadge}`}>
                           คะแนน: {val} / 10
                        </span>
                     </div>
                     {guide && (
-                      <div className="text-xs sm:text-sm pt-3 mt-3 border-t border-black/5 flex items-start gap-2 font-medium">
-                        <HeartPulse className="w-4 h-4 shrink-0 mt-0.5 opacity-70" />
+                      <div className="text-xs pt-2 mt-2 border-t border-black/5 flex items-start gap-1.5 font-medium">
+                        <HeartPulse className="w-3.5 h-3.5 shrink-0 mt-0.5 opacity-70" />
                         <span>{guide}</span>
                       </div>
                     )}
@@ -618,8 +618,8 @@ export default function ESASForm() {
             </div>
 
             {isAnyCritical && (
-              <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 text-xs text-red-700 text-left space-y-1.5 shadow-sm">
-                <div className="flex items-center gap-1.5 font-black text-red-800 text-sm">
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-r-md p-3 text-xs text-red-800 text-left space-y-1 shadow-sm mt-3">
+                <div className="flex items-center gap-1.5 font-black text-red-900 text-sm">
                   <ShieldAlert className="w-4 h-4" /> ตรวจพบคะแนนอาการระดับวิกฤต (≥ 7)
                 </div>
                 <p className="leading-relaxed font-medium">
@@ -635,9 +635,9 @@ export default function ESASForm() {
 
           <button 
             onClick={handleDownloadImage}
-            className="w-full flex items-center justify-center gap-2 py-4 bg-slate-800 hover:bg-slate-900 active:bg-slate-950 text-white border-2 border-slate-700 rounded-2xl font-black text-base shadow-lg transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-slate-800 hover:bg-slate-900 active:bg-slate-950 text-white border border-slate-700 rounded-xl font-black text-sm shadow-md transition-all cursor-pointer"
           >
-            <Download className="w-5 h-5" />
+            <Download className="w-4 h-4" />
             <span>บันทึกรูปภาพคำแนะนำ</span>
           </button>
         </div>
