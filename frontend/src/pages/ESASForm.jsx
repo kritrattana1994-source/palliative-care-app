@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { 
   Activity, AlertCircle, CheckCircle, ChevronRight, ChevronLeft, 
   Volume2, VolumeX, Play, Heart, Thermometer, Gauge, Scale, 
-  Clock, ShieldAlert, Sparkles, Send, Check, HeartPulse, User, PlusCircle, CheckSquare, Square, Download
+  Clock, ShieldAlert, Sparkles, Send, Check, HeartPulse, User, PlusCircle, CheckSquare, Square, Download, ClipboardList, Wind
 } from 'lucide-react';
 import { apiPublicGet, apiPublicPost, getTtsUrl } from '../config';
 import { db, collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, getDoc } from '../services/firebase';
@@ -23,6 +23,7 @@ export default function ESASForm() {
   const [submitted, setSubmitted] = useState(false);
   const [started, setStarted] = useState(false);
   const [assessmentConfig, setAssessmentConfig] = useState(null);
+  const [lastAssessments, setLastAssessments] = useState([]);
   
   // Step: 0 to 8 = ESAS symptoms (9 items)
   // Step: 9 = Vital Signs & Other Symptoms
@@ -70,6 +71,7 @@ export default function ESASForm() {
     { 
       key: 'pain', 
       title: 'อาการปวด (Pain)',
+      short: 'ปวด',
       label: '1. อาการปวด (Pain)', 
       desc: '0 = ไม่ปวดเลย, 10 = ปวดรุนแรงที่สุดเท่าที่จะเป็นไปได้', 
       voiceLabel: 'ข้อที่หนึ่ง อาการปวด ศูนย์คือไม่มีอาการปวดเลย สิบคือปวดรุนแรงที่สุดเท่าที่จะเป็นไปได้ค่ะ',
@@ -87,6 +89,7 @@ export default function ESASForm() {
     { 
       key: 'shortnessOfBreath', 
       title: 'หายใจเหนื่อยหอบ (Dyspnea)',
+      short: 'หอบ',
       label: '2. หายใจเหนื่อยหอบ (Dyspnea)', 
       desc: '0 = หายใจสะดวกดี, 10 = หายใจลำบาก เหนื่อยหอบรุนแรงที่สุด', 
       voiceLabel: 'ข้อที่สอง อาการหายใจเหนื่อยหอบ ศูนย์คือหายใจสะดวกดีปกติ สิบคือหายใจลำบากและเหนื่อยหอบรุนแรงที่สุดค่ะ',
@@ -104,6 +107,7 @@ export default function ESASForm() {
     { 
       key: 'tiredness', 
       title: 'ความเหนื่อยล้า / อ่อนเพลีย',
+      short: 'เพลีย',
       label: '3. ความเหนื่อยล้า / อ่อนเพลีย (Tiredness)', 
       desc: '0 = กระฉับกระเฉงดี, 10 = อ่อนเพลียรุนแรงจนขยับตัวไม่ไหว', 
       voiceLabel: 'ข้อที่สาม ความเหนื่อยล้าหรืออ่อนเพลีย ศูนย์คือกระฉับกระเฉงดี สิบคืออ่อนเพลียรุนแรงจนขยับตัวไม่ไหวค่ะ',
@@ -121,6 +125,7 @@ export default function ESASForm() {
     { 
       key: 'drowsiness', 
       title: 'ความง่วงซึม (Drowsiness)',
+      short: 'ซึม',
       label: '4. ความง่วงซึม (Drowsiness)', 
       desc: '0 = ตื่นตัวดี, 10 = ง่วงซึมตลอดเวลา ปลุกตื่นยาก', 
       voiceLabel: 'ข้อที่สี่ ความง่วงซึม ศูนย์คือตื่นตัวดีปกติ สิบคือง่วงซึมตลอดเวลาปลุกตื่นยากค่ะ',
@@ -138,6 +143,7 @@ export default function ESASForm() {
     { 
       key: 'nausea', 
       title: 'อาการคลื่นไส้ (Nausea)',
+      short: 'คลื่นไส้',
       label: '5. อาการคลื่นไส้ (Nausea)', 
       desc: '0 = ไม่รู้สึกคลื่นไส้เลย, 10 = คลื่นไส้และอาเจียนรุนแรงตลอด', 
       voiceLabel: 'ข้อที่ห้า อาการคลื่นไส้ ศูนย์คือไม่รู้สึกคลื่นไส้เลย สิบคือคลื่นไส้และอาเจียนรุนแรงตลอดเวลาค่ะ',
@@ -155,6 +161,7 @@ export default function ESASForm() {
     { 
       key: 'appetite', 
       title: 'ความอยากอาหาร',
+      short: 'เบื่ออาหาร',
       label: '6. ความอยากอาหาร (Lack of Appetite)', 
       desc: '0 = ทานได้ปกติ, 10 = เบื่ออาหารอย่างรุนแรง ทานไม่ได้เลย', 
       voiceLabel: 'ข้อที่หก ความอยากอาหาร ศูนย์คืออยากอาหารปกติรับประทานได้ดี สิบคือเบื่ออาหารอย่างรุนแรงและรับประทานไม่ได้เลยค่ะ',
@@ -172,6 +179,7 @@ export default function ESASForm() {
     { 
       key: 'depression', 
       title: 'ความรู้สึกซึมเศร้า',
+      short: 'ซึมเศร้า',
       label: '7. ความรู้สึกซึมเศร้า (Depression)', 
       desc: '0 = อารมณ์ดี มีกำลังใจ, 10 = ซึมเศร้า ท้อแท้หดหู่รุนแรงที่สุด', 
       voiceLabel: 'ข้อที่เจ็ด ความรู้สึกซึมเศร้า ศูนย์คืออารมณ์ดีปกติมีกำลังใจดี สิบคือซึมเศร้าหรือท้อแท้หดหู่รุนแรงที่สุดค่ะ',
@@ -189,6 +197,7 @@ export default function ESASForm() {
     { 
       key: 'anxiety', 
       title: 'ความวิตกกังวล',
+      short: 'กังวล',
       label: '8. ความวิตกกังวล (Anxiety)', 
       desc: '0 = สงบ ปลอดภัยดี, 10 = วิตกกังวล กลัว กระสับกระส่ายรุนแรง', 
       voiceLabel: 'ข้อที่แปด ความวิตกกังวล ศูนย์คือรู้สึกสงบปลอดภัยดีปกติ สิบคือกังวลกลัวกระสับกระส่ายรุนแรงที่สุดค่ะ',
@@ -206,6 +215,7 @@ export default function ESASForm() {
     { 
       key: 'wellbeing', 
       title: 'สุขภาวะโดยรวม',
+      short: 'สุขภาวะ',
       label: '9. สุขภาวะโดยรวม (Overall Wellbeing)', 
       desc: '0 = สบายตัวสบายใจดีมาก, 10 = รู้สึกไม่สบายตัวแย่ที่สุด', 
       voiceLabel: 'ข้อที่เก้า ความรู้สึกสบายหรือสุขภาวะโดยรวม ศูนย์คือรู้สึกสบายตัวสบายใจดีมาก สิบคือไม่สบายตัวอย่างรุนแรงที่สุดค่ะ',
@@ -233,6 +243,19 @@ export default function ESASForm() {
         const patientData = snapshot.docs[0].data();
         patientData.id = snapshot.docs[0].id;
         setPatient(patientData);
+
+        // Fetch last 2 assessments
+        const assQ = query(collection(db, 'assessments'), where('patientId', '==', patientData.id));
+        const assSnap = await getDocs(assQ);
+        const assessments = assSnap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => {
+                const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+                const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+                return timeB - timeA;
+            })
+            .slice(0, 2);
+        setLastAssessments(assessments);
 
         // Fetch config
         const docRef = doc(db, 'systemSettings', 'assessmentConfig');
@@ -712,6 +735,39 @@ export default function ESASForm() {
                 <strong>คำแนะนำเรื่องเสียงพูด:</strong> หากเปิดผ่าน LINE แล้วไม่ได้ยินเสียง กรุณากด <strong>จุด 3 จุด มุมขวาบน → "เปิดด้วยเบราว์เซอร์อื่น" (Chrome/Safari)</strong>
               </div>
             </div>
+
+            {/* Last 2 Assessments History */}
+            {lastAssessments.length > 0 && (
+              <div className="w-full text-left space-y-3 mt-2">
+                <h3 className="text-sm font-black text-slate-700 flex items-center gap-1.5 border-b pb-2"><ClipboardList className="w-4 h-4"/> ประวัติการประเมินอาการ 2 ครั้งล่าสุด</h3>
+                <div className="space-y-3">
+                  {lastAssessments.map((ass, idx) => (
+                    <div key={idx} className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                      <div className="text-xs font-bold text-slate-500 mb-2">{ass.date} {ass.createdAt?.toDate ? ass.createdAt.toDate().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                      <div className="grid grid-cols-9 gap-1">
+                        {symptomsMeta.map(s => {
+                          const val = (ass.scores && ass.scores[s.key]) ?? 0;
+                          return (
+                            <div key={s.key} className={`text-center py-1 border rounded ${val >= 7 ? 'bg-red-50 text-red-600 border-red-200 font-bold' : 'bg-white text-slate-600 border-slate-200'}`}>
+                              <div className="text-[8px] truncate">{s.short}</div>
+                              <div className="text-xs">{val}</div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      {(ass.vitalSigns || ass.bp) && (
+                        <div className="flex flex-wrap gap-3 text-[10px] mt-2 font-bold text-slate-500 bg-white p-1.5 rounded border border-slate-100">
+                            <span className="flex items-center gap-1"><Activity className="w-3 h-3 text-rose-500"/> BP: {ass.vitalSigns?.bp || ass.bp || '-'}</span>
+                            <span className="flex items-center gap-1"><Heart className="w-3 h-3 text-red-500"/> HR: {ass.vitalSigns?.pulse || ass.pulse || '-'}</span>
+                            <span className="flex items-center gap-1"><Thermometer className="w-3 h-3 text-amber-500"/> Temp: {ass.vitalSigns?.temp || ass.temp || '-'}</span>
+                            <span className="flex items-center gap-1"><Wind className="w-3 h-3 text-blue-500"/> SpO2: {ass.vitalSigns?.spo2 || ass.spo2 || '-'}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button 
               type="button"
