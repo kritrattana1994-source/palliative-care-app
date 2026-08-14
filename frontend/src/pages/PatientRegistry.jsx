@@ -20,6 +20,12 @@ const STATUS_CONFIG = {
   'จำหน่ายแล้ว':     { color: 'bg-blue-50 text-blue-700 border-blue-200',        dot: 'bg-blue-500' },
 };
 
+const CLINICAL_STATUS_CONFIG = {
+  'Admit':  { color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+  'D/C':  { color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
+  'เสียชีวิต': { color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-500' },
+};
+
 function StatusBadge({ status }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG['ยังไม่ส่งลิงก์'];
   return (
@@ -141,7 +147,7 @@ export default function PatientRegistry({ token }) {
   // ---- CHANGE STATUS INLINE ----
   const handleStatusChange = async (patientId, newStatus) => {
     try {
-      await updateDoc(doc(db, 'patients', patientId), { status: newStatus });
+      await updateDoc(doc(db, 'patients', patientId), { clinicalStatus: newStatus });
       showSuccess('อัพเดตสถานะเรียบร้อยแล้ว');
     } catch (err) {
       setError(err.message || 'ไม่สามารถอัพเดตสถานะได้');
@@ -210,12 +216,13 @@ export default function PatientRegistry({ token }) {
       String(p.disease || '').toLowerCase().includes(q) ||
       String(p.relativePhone || '').includes(q)
     );
-    const matchStatus = filterStatus === 'ทั้งหมด' || p.status === filterStatus;
+    const matchStatus = filterStatus === 'ทั้งหมด' || (p.clinicalStatus || 'Admit') === filterStatus;
     return matchSearch && matchStatus;
   });
 
   const statusCounts = safePatients.reduce((acc, p) => {
-    acc[p.status] = (acc[p.status] || 0) + 1;
+    const s = p.clinicalStatus || 'Admit';
+    acc[s] = (acc[s] || 0) + 1;
     return acc;
   }, {});
 
@@ -267,10 +274,10 @@ export default function PatientRegistry({ token }) {
 
         {/* Status Filter Tabs */}
         <div className="flex flex-wrap gap-2">
-          {['ทั้งหมด', ...STATUS_OPTIONS].map(s => {
+          {['ทั้งหมด', ...CLINICAL_STATUS_OPTIONS].map(s => {
             const count = s === 'ทั้งหมด' ? safePatients.length : (statusCounts[s] || 0);
             const isActive = filterStatus === s;
-            const cfg = STATUS_CONFIG[s];
+            const cfg = CLINICAL_STATUS_CONFIG[s];
             return (
               <button key={s} onClick={() => setFilterStatus(s)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border cursor-pointer ${
@@ -554,7 +561,7 @@ export default function PatientRegistry({ token }) {
                     <th className="px-5 py-4">การวินิจฉัยโรค</th>
                     <th className="px-5 py-4">ผู้ดูแล & เบอร์โทร</th>
                     <th className="px-5 py-4">พยาบาลผู้ดูแล</th>
-                    <th className="px-5 py-4">สถานะ</th>
+                    <th className="px-5 py-4">สถานะทางคลินิก</th>
                     <th className="px-5 py-4 text-center">จัดการ</th>
                   </tr>
                 </thead>
@@ -577,11 +584,11 @@ export default function PatientRegistry({ token }) {
                       <td className="px-5 py-4 text-sm font-semibold text-slate-700">{p.responsibleStaff || 'พย.วิกานดา'}</td>
                       <td className="px-5 py-4">
                         <select
-                          value={p.status || 'ยังไม่ส่งลิงก์'}
+                          value={p.clinicalStatus || 'Admit'}
                           onChange={e => handleStatusChange(p.id, e.target.value)}
-                          className={`text-xs font-bold px-2 py-1.5 rounded-xl border cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500 ${STATUS_CONFIG[p.status]?.color || STATUS_CONFIG['ยังไม่ส่งลิงก์'].color}`}
+                          className={`text-xs font-bold px-2 py-1.5 rounded-xl border cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500 ${CLINICAL_STATUS_CONFIG[p.clinicalStatus || 'Admit']?.color || CLINICAL_STATUS_CONFIG['Admit'].color}`}
                         >
-                          {STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                          {CLINICAL_STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
                       </td>
                       <td className="px-5 py-4">
