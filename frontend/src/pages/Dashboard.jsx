@@ -445,7 +445,7 @@ export default function Dashboard({ token }) {
                           {/* Action Buttons */}
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2">
-                              {patient.status === 'ประเมินแล้ว' ? (
+                              {patient.status === 'ประเมินแล้ว' && (
                                 <button
                                   onClick={() => navigate(`/timeline/${patient.id}`)}
                                   className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 border border-emerald-700 rounded-xl text-sm font-bold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
@@ -453,39 +453,37 @@ export default function Dashboard({ token }) {
                                   <Clock className="w-4 h-4" />
                                   <span>ดู Timeline</span>
                                 </button>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => handleCopyLink(patient)}
-                                    className={`flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer ${
-                                      copiedId === patient.id
-                                        ? 'bg-emerald-600 text-white border-emerald-600 scale-105 shadow-emerald-500/25'
-                                        : 'bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-50'
-                                    }`}
-                                  >
-                                    {copiedId === patient.id ? (
-                                      <>
-                                        <Check className="w-4 h-4" />
-                                        <span>คัดลอกแล้ว!</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <LinkIcon className="w-4 h-4 text-emerald-600" />
-                                        <span>📋 Copy ลิงก์</span>
-                                      </>
-                                    )}
-                                  </button>
-
-                                  <button
-                                    onClick={() => window.open(`/print-qr/${patient.token}`, '_blank')}
-                                    className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 transition-all shadow-sm cursor-pointer"
-                                    title="พิมพ์ QR Code สำหรับให้คนไข้สแกน"
-                                  >
-                                    <Printer className="w-4 h-4" />
-                                    <span>พิมพ์ QR</span>
-                                  </button>
-                                </>
                               )}
+
+                              <button
+                                onClick={() => handleCopyLink(patient)}
+                                className={`flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-bold transition-all shadow-sm cursor-pointer ${
+                                  copiedId === patient.id
+                                    ? 'bg-emerald-600 text-white border-emerald-600 scale-105 shadow-emerald-500/25'
+                                    : 'bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-50'
+                                }`}
+                              >
+                                {copiedId === patient.id ? (
+                                  <>
+                                    <Check className="w-4 h-4" />
+                                    <span>คัดลอกแล้ว!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <LinkIcon className="w-4 h-4 text-emerald-600" />
+                                    <span>📋 Copy ลิงก์</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                onClick={() => window.open(`/print-qr/${patient.token}`, '_blank')}
+                                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 transition-all shadow-sm cursor-pointer"
+                                title="พิมพ์ QR Code สำหรับให้คนไข้สแกน"
+                              >
+                                <Printer className="w-4 h-4" />
+                                <span>พิมพ์ QR</span>
+                              </button>
                             </div>
                           </td>
                         </tr>
