@@ -277,6 +277,7 @@ export default function ESASForm() {
   const summaryRef = useRef(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [ttsEngine, setTtsEngine] = useState('native');
+  const hasSpokenWelcomeRef = useRef(false);
 
   useEffect(() => {
     if (!('speechSynthesis' in window)) {
@@ -377,10 +378,20 @@ export default function ESASForm() {
     }
   };
 
+  useEffect(() => {
+    if (!loading && !started && autoPlayVoice && !hasSpokenWelcomeRef.current && !error) {
+      hasSpokenWelcomeRef.current = true;
+      const welcomeMessage = "สวัสดีค่ะ ยินดีต้อนรับสู่ระบบประเมินอาการ แบบประเมินนี้ประกอบด้วย 9 อาการหลัก ได้แก่ 1. อาการปวด, 2. หายใจเหนื่อยหอบ, 3. ความเหนื่อยล้า, 4. ความง่วงซึม, 5. อาการคลื่นไส้, 6. ความอยากอาหาร, 7. ความรู้สึกซึมเศร้า, 8. ความวิตกกังวล, และ 9. สุขภาวะโดยรวม กดปุ่ม เริ่มทำแบบประเมิน เพื่อเริ่มต้นได้เลยค่ะ";
+      setTimeout(() => {
+        speakText(welcomeMessage);
+      }, 1000);
+    }
+  }, [loading, started, autoPlayVoice, error]);
+
   const handleStart = () => { 
     setStarted(true); 
     if (autoPlayVoice) {
-      speakText('สวัสดีค่ะ ยินดีต้อนรับสู่แบบประเมินระดับอาการคนไข้ ' + symptomsMeta[0].voiceLabel); 
+      speakText(symptomsMeta[0].voiceLabel); 
     }
   };
 
