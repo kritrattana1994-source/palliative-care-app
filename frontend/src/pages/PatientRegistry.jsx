@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Plus, Trash2, AlertCircle, Users, X, UserPlus, Search, Check,
   Phone, MapPin, HeartHandshake, FileText, Pencil, Filter,
@@ -49,6 +49,8 @@ export default function PatientRegistry({ token }) {
   const [editTarget, setEditTarget] = useState(null);
   const [notesTarget, setNotesTarget] = useState(null);
   const [generatingLink, setGeneratingLink] = useState('');
+  const [criticalAlert, setCriticalAlert] = useState(null);
+  const audioRef = useRef(null);
 
   // Add Form State
   const [hn, setHn] = useState('');
@@ -73,7 +75,7 @@ export default function PatientRegistry({ token }) {
   // ---- FETCH PATIENTS (REALTIME) ----
   useEffect(() => {
     setLoading(true);
-    const unsubscribe = onSnapshot(collection(db, 'patients'), (snapshot) => {
+    const unsubscribePatients = onSnapshot(collection(db, 'patients'), (snapshot) => {
         const patientsData = [];
         snapshot.forEach((doc) => {
             patientsData.push({ id: doc.id, ...doc.data() });
@@ -85,7 +87,26 @@ export default function PatientRegistry({ token }) {
         setLoading(false);
     });
 
-    return () => unsubscribe();
+    const pageLoadTime = Date.now();
+    const unsubscribeAssessments = onSnapshot(collection(db, 'assessments'), (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const data = change.doc.data();
+          const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : 0;
+          if (createdAt > pageLoadTime && data.isCritical) {
+            setCriticalAlert(data);
+            if (audioRef.current) {
+               audioRef.current.play().catch(e=>console.log(e));
+            }
+          }
+        }
+      });
+    });
+
+    return () => {
+      unsubscribePatients();
+      unsubscribeAssessments();
+    };
   }, []);
 
   // ---- ADD PATIENT ----
@@ -624,8 +645,41 @@ export default function PatientRegistry({ token }) {
               </table>
             )}
           </div>
-        </div>
       </div>
+
+      {/* Critical Alert Popup */}
+      {criticalAlert && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border-4 border-red-500 flex flex-col items-center text-center space-y-4 animate-in fade-in zoom-in duration-300">
+            <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center animate-pulse">
+              <AlertCircle className="w-10 h-10" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-red-700">ตรวจพบคะแนนวิกฤต!</h3>
+              <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                ผู้ป่วย <strong>{criticalAlert.patientName} (HN: {criticalAlert.patientId})</strong><br/>
+                มีคะแนนประเมินอาการตั้งแต่ 7 ขึ้นไป<br/>
+                กรุณาตรวจสอบด่วน!
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setCriticalAlert(null);
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
+                }
+              }}
+              className="w-full py-3.5 mt-2 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl shadow-lg transition-colors cursor-pointer"
+            >
+              รับทราบ
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Audio for alert */}
+      <audio ref={audioRef} src="/alert-sound.mp3" loop />
     </div>
   );
 }

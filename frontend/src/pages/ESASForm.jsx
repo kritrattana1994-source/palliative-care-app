@@ -282,6 +282,7 @@ export default function ESASForm() {
   const audioRef = useRef(null);
   const thaiVoiceRef = useRef(null);
   const summaryRef = useRef(null);
+  const a4SummaryRef = useRef(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [ttsEngine, setTtsEngine] = useState('native');
   const hasSpokenWelcomeRef = useRef(false);
@@ -548,12 +549,17 @@ export default function ESASForm() {
   }
 
   const handleDownloadImage = async () => {
-    if (!summaryRef.current) return;
+    if (!a4SummaryRef.current) return;
     try {
-      const canvas = await html2canvas(summaryRef.current, {
+      // Temporarily make it visible for html2canvas
+      const el = a4SummaryRef.current;
+      el.style.display = 'block';
+      const canvas = await html2canvas(el, {
         scale: 2,
-        backgroundColor: '#f8fafc',
+        backgroundColor: '#ffffff',
       });
+      el.style.display = 'none';
+
       const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.download = `esas-summary-${patient?.name || 'patient'}.png`;
@@ -566,8 +572,73 @@ export default function ESASForm() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-emerald-50/60 py-8 px-4 flex items-center justify-center">
-        <div className="w-full max-w-md space-y-4">
+      <div className="min-h-screen bg-emerald-50/60 py-8 px-4 flex items-center justify-center relative overflow-hidden">
+        
+        {/* Hidden A4 Landscape Container for Export (297mm x 210mm ~ 1123px x 794px) */}
+        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+          <div ref={a4SummaryRef} style={{ width: '1123px', height: '794px', backgroundColor: '#ffffff', padding: '40px', display: 'none' }} className="flex flex-col font-sans">
+            <div className="flex justify-between items-center border-b-4 border-emerald-500 pb-4 mb-6">
+              <div>
+                <h2 className="text-3xl font-black text-slate-800">สรุปผลการประเมินอาการผู้ป่วย (ESAS)</h2>
+                <p className="text-xl text-slate-600 mt-2 font-medium">ชื่อผู้ป่วย: <span className="font-black text-emerald-800 text-2xl">{patient?.name}</span> (HN: {patient?.id})</p>
+              </div>
+              <div className="text-right">
+                 <p className="text-lg text-slate-700 font-bold">วันที่ประเมิน: {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                 <p className="text-base text-slate-500 font-bold mt-1">โรงพยาบาลพล • ศูนย์การดูแลแบบประคับประคอง</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-5 flex-1 content-start">
+               {symptomsMeta.map(s => {
+                  const val = scores[s.key];
+                  let badgeClass = 'bg-emerald-50/70 border-emerald-300 text-emerald-900';
+                  let scoreBadge = 'bg-emerald-100 text-emerald-900 border-emerald-400';
+                  if (val >= 7) {
+                    badgeClass = 'bg-red-50/70 border-red-300 text-red-900';
+                    scoreBadge = 'bg-red-100 text-red-900 border-red-400';
+                  } else if (val >= 4) {
+                    badgeClass = 'bg-amber-50/70 border-amber-300 text-amber-900';
+                    scoreBadge = 'bg-amber-100 text-amber-900 border-amber-400';
+                  }
+                  const defaultGuide = val >= 7 ? 'แนะนำให้ติดต่อพยาบาลด่วนเพื่อรับคำแนะนำเพิ่มเติม' : 'พักผ่อนให้เพียงพอและสังเกตอาการ';
+                  const guide = assessmentConfig?.[s.key]?.[val]?.selfCareGuide || defaultGuide;
+
+                  return (
+                    <div key={s.key} className={`p-4 rounded-xl border-2 text-left ${badgeClass}`}>
+                      <div className="flex justify-between items-center">
+                         <span className="font-bold text-lg">{s.title}</span>
+                         <span className={`font-black px-3 py-1 rounded-lg border-2 text-base shadow-sm ${scoreBadge}`}>
+                            คะแนน: {val} / 10
+                         </span>
+                      </div>
+                      {guide && (
+                        <div className="text-sm pt-3 mt-3 border-t-2 border-black/10 flex items-start gap-2 font-bold leading-relaxed">
+                          <HeartPulse className="w-5 h-5 shrink-0 mt-0.5 opacity-70" />
+                          <span>{guide}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+               })}
+            </div>
+
+            {isAnyCritical ? (
+               <div className="mt-5 bg-red-50 border-l-8 border-red-600 p-5 rounded-r-xl flex items-center gap-4">
+                 <ShieldAlert className="w-10 h-10 text-red-600" />
+                 <div>
+                    <div className="text-red-900 font-black text-xl">ข้อควรระวัง: ตรวจพบคะแนนวิกฤต (≥ 7)</div>
+                    <div className="text-red-700 text-base font-bold mt-1">ระบบได้แจ้งเตือนพยาบาลแล้ว หากมีอาการเหนื่อยหอบมากหรือไม่รู้สึกตัว กรุณาโทรติดต่อ รพ. ทันที</div>
+                 </div>
+               </div>
+            ) : (
+               <div className="mt-5 text-center text-slate-500 font-bold text-sm">
+                 -- การประเมินนี้ทำขึ้นเพื่อติดตามอาการและให้คำแนะนำเบื้องต้น --
+               </div>
+            )}
+          </div>
+        </div>
+
+        <div className="w-full max-w-md space-y-4 relative z-10">
           
           <div ref={summaryRef} className="bg-white rounded-xl p-5 sm:p-6 shadow-md border border-slate-200 text-center space-y-5 animate-fadeIn">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 border-2 border-emerald-50 shadow-inner">
