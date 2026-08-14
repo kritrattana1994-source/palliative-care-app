@@ -29,7 +29,7 @@ export default function ESASForm() {
   // Step: 10 = Notes & Final Review
   const [currentStep, setCurrentStep] = useState(0);
   const [autoPlayVoice, setAutoPlayVoice] = useState(true);
-  const [selectedRound, setSelectedRound] = useState('09:00');
+
   const [notes, setNotes] = useState('');
   
   // Vital Signs state (Optional)
@@ -220,13 +220,6 @@ export default function ESASForm() {
         return `สุขภาวะโดยรวม เลือกระดับ ${numWord} คะแนน รู้สึกแย่และทรมานที่สุดค่ะ`;
       }
     }
-  ];
-
-  const roundOptions = [
-    { value: '09:00', label: 'รอบเช้า (09:00 น.)', desc: 'ประเมินช่วงเช้าประจำวัน' },
-    { value: '14:00', label: 'รอบบ่าย (14:00 น.)', desc: 'ประเมินช่วงกลางวัน' },
-    { value: '18:00', label: 'รอบเย็น (18:00 น.)', desc: 'ประเมินช่วงค่ำก่อนนอน' },
-    { value: 'SOS', label: 'ประเมินฉุกเฉิน (SOS)', desc: 'ประเมินเมื่อมีอาการเปลี่ยนแปลงกะทันหัน' }
   ];
 
   useEffect(() => {
@@ -432,7 +425,6 @@ export default function ESASForm() {
       const assessmentData = {
         patientId: patient.id,
         scores,
-        round: selectedRound,
         notes,
         vitalSigns,
         otherSymptoms: otherSymptoms.join(', '),
@@ -718,31 +710,7 @@ export default function ESASForm() {
               </p>
             </div>
 
-            {/* Round Selection */}
-            <div className="w-full bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left space-y-2.5">
-              <label className="text-xs sm:text-sm font-black text-slate-700 flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-emerald-600" /> เลือกรอบเวลาประเมิน:
-              </label>
-              <div className="grid grid-cols-2 gap-2.5">
-                {roundOptions.map(r => (
-                  <button
-                    key={r.value}
-                    type="button"
-                    onClick={() => setSelectedRound(r.value)}
-                    className={`p-3 rounded-2xl text-left transition-all border cursor-pointer ${
-                      selectedRound === r.value
-                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-md ring-2 ring-emerald-200'
-                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-                    }`}
-                  >
-                    <div className="font-black text-xs sm:text-sm">{r.label}</div>
-                    <div className={`text-[11px] font-medium mt-0.5 ${selectedRound === r.value ? 'text-emerald-100' : 'text-slate-500'}`}>
-                      {r.desc}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+
 
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-xs text-amber-800 text-left flex gap-2.5 leading-relaxed shadow-sm">
               <span className="text-lg">🔊</span>

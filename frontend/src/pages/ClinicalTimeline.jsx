@@ -152,7 +152,7 @@ export default function ClinicalTimeline({ token }) {
     ...assessments.map(ass => ({
       id: ass.id,
       isAssessment: true,
-      title: `📊 ประเมินอาการ (รอบ ${ass.round})`,
+      title: `📊 ประเมินอาการ`,
       date: ass.date,
       time: ass.createdAt?.toDate ? ass.createdAt.toDate().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '',
       sortTime: ass.createdAt?.toMillis ? ass.createdAt.toMillis() : 0,
@@ -577,7 +577,7 @@ export default function ClinicalTimeline({ token }) {
                       {chartData && chartData.points.map((pt, idx) => (
                         <g key={idx}>
                           <circle cx={pt.x} cy={pt.y} r="6" fill={activeSymptom?.stroke || '#059669'} stroke="#fff" strokeWidth="2.5" />
-                          <title>{`${pt.date} รอบ ${pt.round}: คะแนน ${pt.val}/10`}</title>
+                          <title>{`${pt.date}: คะแนน ${pt.val}/10`}</title>
                         </g>
                       ))}
                     </svg>
@@ -599,9 +599,6 @@ export default function ClinicalTimeline({ token }) {
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-emerald-600" />
                           <span className="text-sm font-black text-slate-800">{ass.date}</span>
-                          <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-black border border-emerald-200">
-                            รอบ {ass.round}
-                          </span>
                         </div>
                       </div>
 

@@ -97,10 +97,7 @@ export default function Dashboard({ token }) {
   };
 
   const getCurrentRoundText = () => {
-    const hour = new Date().getHours();
-    if (hour < 11) return 'รอบเช้า (09:00 น.)';
-    if (hour < 15) return 'รอบกลางวัน (13:00 น.)';
-    return 'รอบเย็น (18:00 น.)';
+    return 'ประเมินล่าสุด';
   };
 
   return (
@@ -428,11 +425,9 @@ export default function Dashboard({ token }) {
                                     );
                                   })}
                                 </div>
-                                {latest.date && (
                                   <p className="text-[11px] text-slate-400 font-semibold">
-                                    รอบ {latest.round || '09:00'} ({latest.date})
+                                    {latest.date}
                                   </p>
-                                )}
                               </div>
                             )}
                           </td>
