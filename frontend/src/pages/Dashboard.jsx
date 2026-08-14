@@ -349,6 +349,16 @@ export default function Dashboard({ token }) {
                                   {patient.gender} {patient.age ? `${patient.age} ปี` : ''}
                                 </span>
                               )}
+                              {patient.clinicalStatus && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black border ${
+                                  patient.clinicalStatus === 'Admit' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                  patient.clinicalStatus === 'D/C' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                  patient.clinicalStatus === 'เสียชีวิต' ? 'bg-red-50 text-red-700 border-red-200' :
+                                  'bg-slate-100 text-slate-700 border-slate-200'
+                                }`}>
+                                  {patient.clinicalStatus}
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-slate-500 font-semibold mt-1 flex items-center gap-2">
                               <span className="font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">HN: {patient.id}</span>

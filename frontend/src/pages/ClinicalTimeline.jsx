@@ -132,9 +132,10 @@ export default function ClinicalTimeline({ token }) {
 
   const handleStatusChange = async (newStatus) => {
     try {
-      const ptRef = doc(db, 'patients', id);
-      await setDoc(ptRef, { status: newStatus }, { merge: true });
-      setPatient(prev => ({ ...prev, status: newStatus }));
+      await updateDoc(doc(db, 'patients', id), {
+        clinicalStatus: newStatus
+      });
+      setPatient(prev => ({ ...prev, clinicalStatus: newStatus }));
       
       const newLog = {
         category: 'other',
@@ -268,11 +269,11 @@ export default function ClinicalTimeline({ token }) {
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-black text-slate-900">{patient?.name}</h2>
                 <select 
-                  value={patient?.status || 'Admit'} 
+                  value={patient?.clinicalStatus || 'Admit'} 
                   onChange={(e) => handleStatusChange(e.target.value)}
                   className={`inline-flex px-2.5 py-1 rounded-full text-xs font-black border outline-none cursor-pointer ${
-                    patient?.status === 'Admit' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                    patient?.status === 'เสียชีวิต' ? 'bg-red-50 text-red-700 border-red-200' :
+                    patient?.clinicalStatus === 'Admit' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    patient?.clinicalStatus === 'เสียชีวิต' ? 'bg-red-50 text-red-700 border-red-200' :
                     'bg-slate-100 text-slate-700 border-slate-300'
                   }`}
                 >

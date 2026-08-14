@@ -11,6 +11,7 @@ const generateToken = () => Math.random().toString(36).substring(2, 8).toUpperCa
 
 
 const STATUS_OPTIONS = ['ยังไม่ส่งลิงก์', 'ส่งแล้ว (รอผล)', 'ประเมินแล้ว', 'จำหน่ายแล้ว'];
+const CLINICAL_STATUS_OPTIONS = ['Admit', 'D/C', 'เสียชีวิต'];
 
 const STATUS_CONFIG = {
   'ยังไม่ส่งลิงก์':  { color: 'bg-slate-100 text-slate-600 border-slate-200',   dot: 'bg-slate-400' },
@@ -54,6 +55,7 @@ export default function PatientRegistry({ token }) {
   const [address, setAddress] = useState('');
   const [responsibleStaff, setResponsibleStaff] = useState('พย.วิกานดา');
   const [clinicalNotes, setClinicalNotes] = useState('');
+  const [clinicalStatus, setClinicalStatus] = useState('Admit');
   const [submitting, setSubmitting] = useState(false);
 
   // Edit Form State
@@ -93,12 +95,13 @@ export default function PatientRegistry({ token }) {
         caregiverName: caregiverName.trim(), address: address.trim(),
         responsibleStaff, clinicalNotes: clinicalNotes.trim(),
         status: 'ยังไม่ส่งลิงก์',
+        clinicalStatus,
         createdAt: new Date().toISOString()
       });
       showSuccess(`ลงทะเบียนผู้ป่วย ${name} (HN: ${patientId}) เรียบร้อยแล้ว`);
       setHn(''); setName(''); setAge(''); setGender('ชาย'); setDisease('');
       setRelativePhone(''); setCaregiverName(''); setAddress('');
-      setResponsibleStaff('พย.วิกานดา'); setClinicalNotes('');
+      setResponsibleStaff('พย.วิกานดา'); setClinicalNotes(''); setClinicalStatus('Admit');
       setShowAddForm(false);
     } catch (err) {
       setError(err.message || 'เกิดข้อผิดพลาดในการลงทะเบียน');
@@ -116,6 +119,7 @@ export default function PatientRegistry({ token }) {
       caregiverName: p.caregiverName || '', address: p.address || '',
       responsibleStaff: p.responsibleStaff || 'พย.วิกานดา',
       clinicalNotes: p.clinicalNotes || '', status: p.status || 'ยังไม่ส่งลิงก์',
+      clinicalStatus: p.clinicalStatus || 'Admit'
     });
   };
 
@@ -360,6 +364,12 @@ export default function PatientRegistry({ token }) {
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">แผนการดูแล / ยาสำคัญ (Clinical Notes)</label>
                     <textarea value={clinicalNotes} onChange={e => setClinicalNotes(e.target.value)} placeholder="เช่น Morphine syrup 10mg q 4 hr prn pain, On O2 cannula 3 LPM" rows={2} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50 hover:bg-white" />
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">สถานะทางคลินิก</label>
+                    <select value={clinicalStatus} onChange={e => setClinicalStatus(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 hover:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      {CLINICAL_STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
                   <button type="button" onClick={() => setShowAddForm(false)} className="px-5 py-2.5 border border-slate-300 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 cursor-pointer">ยกเลิก</button>
@@ -430,6 +440,12 @@ export default function PatientRegistry({ token }) {
                       {STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">สถานะทางคลินิก</label>
+                    <select value={editForm.clinicalStatus} onChange={e => setEditForm(f => ({...f, clinicalStatus: e.target.value}))} className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold bg-slate-50 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                      {CLINICAL_STATUS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">Clinical Notes</label>
                     <textarea value={editForm.clinicalNotes} onChange={e => setEditForm(f => ({...f, clinicalNotes: e.target.value}))} rows={3} placeholder="ยา แผนการรักษา หรือข้อมูลสำคัญทางการแพทย์..." className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50" />
@@ -455,7 +471,18 @@ export default function PatientRegistry({ token }) {
                   <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center"><Stethoscope className="w-5 h-5" /></div>
                   <div>
                     <h3 className="text-lg font-black text-slate-800">Clinical Notes</h3>
-                    <p className="text-xs text-slate-500 font-medium">{notesTarget.name} (HN: {notesTarget.id})</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-slate-500 font-medium">{notesTarget.name} (HN: {notesTarget.id})</p>
+                      {notesTarget.clinicalStatus && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black border ${
+                          notesTarget.clinicalStatus === 'Admit' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          notesTarget.clinicalStatus === 'D/C' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          'bg-slate-100 text-slate-700 border-slate-200'
+                        }`}>
+                          {notesTarget.clinicalStatus}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <button onClick={() => setNotesTarget(null)} className="p-1.5 rounded-xl hover:bg-slate-200 text-slate-400 cursor-pointer"><X className="w-5 h-5" /></button>
