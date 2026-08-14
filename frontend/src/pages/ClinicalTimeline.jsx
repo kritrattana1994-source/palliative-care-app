@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Calendar, FileText, CheckCircle, TrendingUp, AlertTriangle, 
   User, MapPin, Sparkles, Phone, Pill, Activity, Users, Home, 
-  ClipboardList, Clock, X, Send, ShieldAlert, Heart, HeartPulse, Gauge, Thermometer, Wind, Printer
+  ClipboardList, Clock, X, Send, ShieldAlert, Heart, HeartPulse, Gauge, Thermometer, Wind, Printer, Trash2
 } from 'lucide-react';
-import { db, doc, getDoc, setDoc, collection, query, where, getDocs, addDoc, orderBy } from '../services/firebase';
+import { db, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, addDoc, orderBy } from '../services/firebase';
 import { writeAuditLog } from '../services/auditLog';
 
 export default function ClinicalTimeline({ token, user }) {
@@ -170,6 +170,26 @@ export default function ClinicalTimeline({ token, user }) {
     } catch (err) {
       console.error(err);
       alert('ไม่สามารถอัปเดตสถานะได้: ' + err.message);
+    }
+  };
+
+  const handleDeleteLog = async (log) => {
+    const isConfirm = window.confirm(`คุณต้องการลบรายการ "${log.title}" ใช่หรือไม่?`);
+    if (!isConfirm) return;
+
+    try {
+      if (log.isAssessment) {
+        await deleteDoc(doc(db, 'assessments', log.id));
+        setAssessments(prev => prev.filter(a => a.id !== log.id));
+        writeAuditLog(user, 'DELETE_ASSESSMENT', 'assessments', log.id, patient?.name || id, `ลบแบบประเมินวันที่ ${log.date}`);
+      } else {
+        await deleteDoc(doc(db, 'patients', id, 'eventLogs', log.id));
+        setEventLogs(prev => prev.filter(e => e.id !== log.id));
+        writeAuditLog(user, 'DELETE_EVENT', 'eventLogs', log.id, patient?.name || id, `ลบบันทึก: ${log.title}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('ไม่สามารถลบรายการได้: ' + err.message);
     }
   };
 
@@ -492,9 +512,18 @@ export default function ClinicalTimeline({ token, user }) {
                       <div className="bg-slate-50/90 hover:bg-white border border-slate-200/80 rounded-2xl p-5 space-y-2 shadow-xs transition-all">
                         <div className="flex justify-between items-center text-xs font-bold text-slate-400">
                           <h4 className={`font-black text-sm ${log.isAssessment ? 'text-indigo-700' : 'text-slate-900'}`}>{log.title}</h4>
-                          <span className="bg-white px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600">
-                            {log.date} {log.time && `• ${log.time}`}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-white px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600">
+                              {log.date} {log.time && `• ${log.time}`}
+                            </span>
+                            <button 
+                              onClick={() => handleDeleteLog(log)}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              title="ลบรายการนี้"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         {log.isAssessment ? (
                           <div className="mt-3">
