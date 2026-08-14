@@ -5,6 +5,9 @@ service cloud.firestore {
     match /patients/{patientId} {
       allow read, write: if true;
     }
+    match /patients/{patientId}/eventLogs/{logId} {
+      allow read, write: if request.auth != null;
+    }
     // คนไข้ส่งแบบประเมินได้, แต่การดูข้อมูลย้อนหลังต้องเป็นเจ้าหน้าที่
     match /assessments/{assessmentId} {
       allow create: if true;
