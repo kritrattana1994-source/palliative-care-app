@@ -106,9 +106,9 @@ export default function EquipmentBorrow({ token, user }) {
         if (!selectedWard) return alert('กรุณาระบุวอร์ด');
         if (items.length === 0) return alert('กรุณาเพิ่มรายการเครื่องมืออย่างน้อย 1 รายการ');
 
-        // Check if all items have photos
         for (const item of items) {
             if (!item.equipmentId) return alert('กรุณาเลือกเครื่องมือแพทย์ให้ครบทุกกล่อง');
+            if (item.equipmentId === 'NON_MEDICAL' && !item.nonMedicalName) return alert('กรุณาระบุชื่ออุปกรณ์อื่นๆ ให้ครบถ้วน');
             if (!item.photoFile) return alert('กรุณาถ่ายรูปประกอบทุกรายการ (เพื่อยืนยันสภาพก่อนยืม)');
         }
 
@@ -118,34 +118,49 @@ export default function EquipmentBorrow({ token, user }) {
             const patientObj = patients.find(p => p.id === selectedPatient);
 
             for (const item of items) {
-                const eqObj = equipments.find(e => e.id === item.equipmentId);
+                const isNonMed = item.equipmentId === 'NON_MEDICAL';
+                const eqIdToSave = isNonMed ? `OTHER_${Date.now().toString().slice(-6)}_${Math.floor(Math.random()*1000)}` : item.equipmentId;
+                const eqObj = !isNonMed ? equipments.find(e => e.id === item.equipmentId) : null;
+                const eqNameToSave = isNonMed ? item.nonMedicalName : (eqObj ? eqObj.name : 'Unknown');
+
                 let photoUrl = '';
                 if (item.photoFile) {
-                    const photoRef = ref(storage, `equipment_photos/${generatedRefId}_${item.equipmentId}_${item.photoFile.name}`);
+                    const photoRef = ref(storage, `equipment_photos/${generatedRefId}_${eqIdToSave}_${item.photoFile.name}`);
                     await uploadBytes(photoRef, item.photoFile);
                     photoUrl = await getDownloadURL(photoRef);
                 }
 
-                await setDoc(doc(db, 'borrow_records', `${generatedRefId}_${item.equipmentId}`), {
+                await setDoc(doc(db, 'borrow_records', `${generatedRefId}_${eqIdToSave}`), {
                     refId: generatedRefId,
                     type: 'ยืม',
                     patientId: selectedPatient,
                     patientName: patientObj ? `${patientObj.id} - ${patientObj.name}` : 'Unknown',
-                    equipmentId: item.equipmentId,
-                    equipmentName: eqObj ? eqObj.name : 'Unknown',
+                    equipmentId: eqIdToSave,
+                    equipmentName: eqNameToSave,
                     staff: staffName,
                     ward: selectedWard,
                     timestamp: serverTimestamp(),
                     condition: 'ปกติ',
                     note: item.note || '-',
                     deposit: Number(item.deposit),
-                    photoUrl: photoUrl
+                    photoUrl: photoUrl,
+                    isNonMedical: isNonMed
                 });
 
-                await updateDoc(doc(db, 'equipments', item.equipmentId), {
-                    status: 'ยืม',
-                    currentPatientId: selectedPatient
-                });
+                if (isNonMed) {
+                    await setDoc(doc(db, 'equipments', eqIdToSave), {
+                        id: eqIdToSave,
+                        name: eqNameToSave,
+                        status: 'ยืม',
+                        currentPatientId: selectedPatient,
+                        isNonMedical: true
+                    });
+                } else {
+                    await updateDoc(doc(db, 'equipments', item.equipmentId), {
+                        status: 'ยืม',
+                        currentPatientId: selectedPatient
+                    });
+                }
             }
             
             alert('บันทึกรายการยืมสำเร็จ! Ref ID: ' + generatedRefId);
@@ -264,9 +279,27 @@ export default function EquipmentBorrow({ token, user }) {
                                     <label className="text-[10px] font-bold text-slate-400 uppercase">เครื่องมือ *</label>
                                     <select required value={item.equipmentId} onChange={e=>updateItem(index, 'equipmentId', e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl font-bold bg-white text-sm outline-none mt-1">
                                         <option value="" disabled>-- เลือกเครื่องมือ --</option>
-                                        {equipments.map(eq => <option key={eq.id} value={eq.id}>{eq.name} ({eq.id})</option>)}
+                                        <optgroup label="เครื่องมือแพทย์ในระบบ">
+                                            {equipments.map(eq => <option key={eq.id} value={eq.id}>{eq.name} ({eq.id})</option>)}
+                                        </optgroup>
+                                        <optgroup label="อื่นๆ">
+                                            <option value="NON_MEDICAL">อื่นๆ (ไม่ใช่เครื่องมือแพทย์)</option>
+                                        </optgroup>
                                     </select>
                                 </div>
+                                {item.equipmentId === 'NON_MEDICAL' && (
+                                    <div className="mb-3 pr-8">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase">ระบุชื่ออุปกรณ์ / รายละเอียด *</label>
+                                        <input 
+                                            required 
+                                            type="text" 
+                                            value={item.nonMedicalName || ''} 
+                                            onChange={e=>updateItem(index, 'nonMedicalName', e.target.value)} 
+                                            className="w-full p-2.5 border border-slate-200 rounded-xl font-bold text-slate-700 text-sm outline-none mt-1 bg-white" 
+                                            placeholder="เช่น เตียงลม, รถเข็น, เสาน้ำเกลือ..." 
+                                        />
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-400 uppercase">มัดจำ</label>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Save, Package, ArrowLeft, CheckCircle } from 'lucide-react';
-import { db, collection, getDocs, setDoc, updateDoc, doc, serverTimestamp, query, where, orderBy, onSnapshot } from '../services/firebase';
+import { db, collection, getDocs, setDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy, onSnapshot } from '../services/firebase';
 import { writeAuditLog } from '../services/auditLog';
 
 export default function EquipmentReturn({ token, user }) {
@@ -55,11 +55,15 @@ export default function EquipmentReturn({ token, user }) {
                 photoUrl: ''
             });
 
-            // Update Equipment
-            await updateDoc(doc(db, 'equipments', selectedItem.id), {
-                status: 'ว่าง',
-                currentPatientId: null
-            });
+            // Update Equipment or Delete if Non-Medical
+            if (selectedItem.isNonMedical) {
+                await deleteDoc(doc(db, 'equipments', selectedItem.id));
+            } else {
+                await updateDoc(doc(db, 'equipments', selectedItem.id), {
+                    status: 'ว่าง',
+                    currentPatientId: null
+                });
+            }
 
             alert('บันทึกรับคืนอุปกรณ์สำเร็จ!');
             writeAuditLog(user, 'RETURN_EQUIPMENT', 'equipment', selectedItem.id, selectedItem.name, `สภาพ: ${returnCondition}`);
