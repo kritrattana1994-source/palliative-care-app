@@ -81,7 +81,7 @@ export default function EquipmentReturn({ token, user }) {
     });
 
     return (
-        <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#f0f7ff] font-['Sarabun'] relative">
+        <div className="flex-1 h-full overflow-y-auto bg-[#f0f7ff] font-['Sarabun'] relative">
             
             <div className="max-w-5xl mx-auto w-full mt-6 px-4">
                 {/* Navigation Tabs */}
