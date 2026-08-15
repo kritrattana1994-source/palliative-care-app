@@ -160,26 +160,7 @@ export default function Dashboard({ token }) {
             </div>
           </div>
 
-          {/* Pending Links */}
-          <div 
-            onClick={() => setStatusFilter('pending')}
-            className={`bg-white rounded-3xl p-6 border transition-all cursor-pointer shadow-sm hover:shadow-md ${statusFilter === 'pending' ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/30' : 'border-slate-200/90'}`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-13 h-13 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl border border-amber-200 shadow-inner">
-                ⏳
-              </div>
-              <span className="text-xs font-bold text-amber-700 bg-amber-100/80 px-2.5 py-1 rounded-full">
-                ต้องส่งลิงก์
-              </span>
-            </div>
-            <div className="mt-4">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">รอส่งลิงก์</p>
-              <h3 className="text-3xl font-black text-slate-800 mt-0.5">
-                {loading ? '...' : pendingLinkCount} <span className="text-sm font-bold text-slate-400">ราย</span>
-              </h3>
-            </div>
-          </div>
+
 
           {/* Assessed */}
           <div 
@@ -254,12 +235,7 @@ export default function Dashboard({ token }) {
                 >
                   ทั้งหมด ({patients.length})
                 </button>
-                <button
-                  onClick={() => setStatusFilter('pending')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === 'pending' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
-                >
-                  รอส่ง ({pendingLinkCount})
-                </button>
+
                 <button
                   onClick={() => setStatusFilter('assessed')}
                   className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === 'assessed' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
