@@ -32,6 +32,9 @@ export default function Dashboard({ token }) {
   }, [token]);
 
   const handleCopyLink = async (patient) => {
+    const isConfirm = window.confirm(`ยืนยันการส่งแบบประเมิน (คัดลอกลิงก์) ให้กับผู้ป่วย:\n"${patient.name}" ใช่หรือไม่?`);
+    if (!isConfirm) return;
+
     try {
       let ptToken = patient.token;
       if (!ptToken) {
@@ -380,10 +383,14 @@ export default function Dashboard({ token }) {
                                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
                                 รอตอบแบบประเมิน
                               </span>
-                            ) : (
+                            ) : patient.status === 'ประเมินแล้ว' ? (
                               <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${critical ? 'bg-red-100 text-red-700 border-red-200 shadow-sm' : 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'}`}>
                                 <span className={`w-2 h-2 rounded-full ${critical ? 'bg-red-600 animate-pulse' : 'bg-emerald-500'}`}></span>
                                 {critical ? 'ประเมินแล้ว (วิกฤต 🚨)' : 'ประเมินแล้ว'}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300 shadow-sm">
+                                {patient.status}
                               </span>
                             )}
                           </td>
