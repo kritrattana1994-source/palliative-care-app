@@ -1,8 +1,8 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { ClipboardList, Users, LogOut, Activity, UserCog, ChevronRight, Package, History } from 'lucide-react';
+import { ClipboardList, Users, LogOut, Activity, UserCog, ChevronRight, Package, History, X } from 'lucide-react';
 
-export default function Sidebar({ user, onLogout }) {
+export default function Sidebar({ user, onLogout, isOpen, setIsOpen }) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -20,9 +20,28 @@ export default function Sidebar({ user, onLogout }) {
     }`;
 
   return (
-    <aside className="w-64 bg-slate-900 text-white flex flex-col shadow-2xl z-20 shrink-0 border-r border-slate-800/80">
-      {/* Brand Header */}
-      <div className="p-6 border-b border-slate-800">
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-30 md:hidden transition-opacity"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`fixed md:relative inset-y-0 left-0 z-40 w-64 bg-slate-900 text-white flex flex-col shadow-2xl shrink-0 border-r border-slate-800/80 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:hidden'}`}>
+        
+        {/* Close Button (Mobile & Desktop) */}
+        <button 
+          onClick={() => setIsOpen(false)}
+          className="absolute top-4 right-4 p-2 bg-slate-800/80 rounded-xl hover:bg-slate-700 text-slate-300 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Brand Header */}
+        <div className="p-6 border-b border-slate-800 mt-2">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
             <Activity className="w-6 h-6 text-emerald-400" />
@@ -130,7 +149,8 @@ export default function Sidebar({ user, onLogout }) {
           <LogOut className="w-4 h-4" />
           <span>ออกจากระบบ</span>
         </button>
-      </div>
-    </aside>
+        </div>
+      </aside>
+    </>
   );
 }
