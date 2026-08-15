@@ -103,7 +103,7 @@ export default function EquipmentManagement({ token }) {
   }
 
   return (
-    <div className="flex-1 p-4 md:p-8 overflow-y-auto bg-[#f8fafc] font-['Sarabun'] h-screen">
+    <div className="flex-1 p-4 md:p-8 overflow-y-auto bg-[#f8fafc] font-['Sarabun'] h-full">
       <div className="max-w-6xl mx-auto">
         
         {/* Header */}

@@ -237,7 +237,7 @@ export default function PatientRegistry({ token, user }) {
 
   // ============================================================
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-50">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-50">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-8 py-5 sticky top-0 z-10 flex flex-wrap justify-between items-center gap-4 shadow-sm">
         <div>

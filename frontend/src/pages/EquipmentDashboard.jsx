@@ -208,7 +208,7 @@ export default function EquipmentDashboard({ token }) {
   }, [records]);
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-[#f8fafc] font-['Sarabun']">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#f8fafc] font-['Sarabun']">
       <div className="p-4 md:p-8 max-w-7xl mx-auto w-full">
         
         {/* Navigation Tabs */}

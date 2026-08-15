@@ -78,7 +78,7 @@ export default function AuditLog({ token }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-50">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-50">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 px-8 py-5 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between flex-wrap gap-4">

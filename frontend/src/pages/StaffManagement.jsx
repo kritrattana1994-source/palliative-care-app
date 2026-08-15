@@ -179,7 +179,7 @@ export default function StaffManagement({ token, user }) {
   // ========================================================
   if (!isAdmin) {
     return (
-      <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-50 items-center justify-center p-8">
+      <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-50 items-center justify-center p-8">
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-12 text-center max-w-sm space-y-4">
           <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto">
             <Shield className="w-8 h-8 text-red-500" />
@@ -194,7 +194,7 @@ export default function StaffManagement({ token, user }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-50">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-50">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-8 py-5 sticky top-0 z-10 flex flex-wrap justify-between items-center gap-4 shadow-sm">
         <div>

@@ -127,7 +127,7 @@ export default function AssessmentConfig({ user }) {
   const currentSymptomData = config[activeSymptom] || Array.from({ length: 11 }, (_, i) => ({ score: i, displayMessage: '', speechMessage: '', selfCareGuide: '' }));
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-50">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-50">
       <header className="bg-white border-b border-slate-200 px-8 py-5 sticky top-0 z-10 flex flex-wrap justify-between items-center gap-4 shadow-sm">
         <div>
           <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">

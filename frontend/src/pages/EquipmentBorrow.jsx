@@ -176,7 +176,7 @@ export default function EquipmentBorrow({ token, user }) {
     if (loading && patients.length === 0) return <div className="p-12 text-center text-blue-600 font-bold">กำลังดึงข้อมูล...</div>;
 
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-y-auto bg-[#f0f7ff] font-['Sarabun'] relative">
+        <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#f0f7ff] font-['Sarabun'] relative">
             
             <div className="max-w-4xl mx-auto w-full mt-6 px-4">
                 {/* Navigation Tabs */}
